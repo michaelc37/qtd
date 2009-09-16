@@ -42,6 +42,7 @@
 #include "abstractmetalang.h"
 #include "reporthandler.h"
 #include "jumptable.h"
+#include <iostream>
 
 /*******************************************************************************
  * AbstractMetaType
@@ -1110,7 +1111,8 @@ void AbstractMetaClass::addFunction(AbstractMetaFunction *function)
         m_functions << function;
         qSort(m_functions.begin(), m_functions.end(), function_sorter);
     }
-
+    else
+        qFatal("blah");
 
     m_has_virtual_slots |= function->isVirtualSlot();
     m_has_virtuals |= !function->isFinal() || function->isVirtualSlot();
@@ -1160,11 +1162,12 @@ bool AbstractMetaClass::hasProtectedFunctions() const {
 bool AbstractMetaClass::generateShellClass() const
 {
     return m_force_shell_class ||
-        (!isFinal()
-         && (hasVirtualFunctions()
-             || hasProtectedFunctions()
-             || hasFieldAccessors()
-             || typeEntry()->isObject())); // qtd2 for being more consistent
+        m_has_virtual_destructor ||
+    (!isFinal()
+        && (hasVirtualFunctions()
+        || hasProtectedFunctions()
+        || hasFieldAccessors()
+        || typeEntry()->isObject())); // qtd2 for being more consistent
 }
 
 QPropertySpec *AbstractMetaClass::propertySpecForRead(const QString &name) const
@@ -1323,6 +1326,11 @@ bool AbstractMetaClass::hasConstructors() const
     return queryFunctions(Constructors).size() != 0;
 }
 
+bool AbstractMetaClass::isPolymorphic()
+{
+    return typeEntry()->isObject() && m_has_virtual_destructor;
+}
+
 void AbstractMetaClass::addDefaultConstructor()
 {
     AbstractMetaFunction *f = new AbstractMetaFunction;
@@ -1339,7 +1347,7 @@ void AbstractMetaClass::addDefaultConstructor()
     f->setImplementingClass(this);
     f->setOriginalAttributes(f->attributes());
 
-    addFunction(f);
+    /*addFunction*/(f);
 }
 
 bool AbstractMetaClass::hasFunction(const AbstractMetaFunction *f) const

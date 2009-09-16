@@ -3,9 +3,17 @@ module qt.QGlobal;
 public import qt.qtd.Str;
 public import qt.QDefines;
 
-version (Tango)
+version (D_Version2)
+{
+    import std.stdio;
+    package import std.c.stdlib,
+                   core.memory;
+}
+else
 {
     import tango.io.Stdout;
+    import tango.core.Thread;
+    
     void writeln(string s)
     {
         Stdout(s).newline;
@@ -13,11 +21,67 @@ version (Tango)
     package import tango.stdc.stdlib,
                    tango.core.Memory;
 }
+
+private enum : size_t { stackSize = 1024 * 1024 }
+
+final class StackAlloc
+{
+    alias typeof(this) This;
+    private void* _data;
+    
+    private static size_t align16(size_t size)
+    {
+        return size + 16 - (size - size & ~15);        
+    }
+    
+    this(size_t size)
+    {
+        _data = (new void[size]).ptr;
+    }
+        
+    void* alloc(size_t size)
+    {
+        void* res = _data;
+        _data += align16(size);
+        return res;            
+    }
+    
+    void free(size_t size)
+    {
+        _data -= align16(size);
+    }
+}
+ 
+version (D_Version2)
+{
+    void StackAlloc __stackAlloc()
+    {
+        static StackAlloc instance; // thread-local instance
+        // COMPILER BUG: No thread-local static constructors, Using lazy construction
+        if (!instance)
+            instance = new This(stackSize);
+        return instance;
+    }
+}
 else
 {
-    import std.stdio;
-    package import std.c.stdlib,
-                   core.memory;
+    private static ThreadLocal!(StackAlloc) stackAllocInst;
+    
+    static this()
+    {
+        stackAllocInst = new ThreadLocal!(StackAlloc);
+    }
+    
+    static StackAlloc __stackAlloc()
+    {            
+        auto res = stackAllocInst.val;
+        if (!res)
+        {
+            res = new This(stackSize);
+            stackAllocInst.val = res;
+        }
+        return res;
+    }
 }
 
 T static_cast(T, U)(U obj)
@@ -40,21 +104,15 @@ template QT_END_HEADER() {
 mixin QT_BEGIN_HEADER;
 mixin QT_BEGIN_NAMESPACE;
 
-//TODO: this sucks
 extern(C) void qtd_dummy() {}
-// Defined in QObject.d
-extern(C) void qtd_delete_d_qobject(void* dPtr);
+// Defined in QtdObject.d
+extern(C) void qtd_delete_d_object(void* dPtr);
 
 version(cpp_shared)
 {
-    extern (C) void qtd_core_initCallBacks(void* toUtf8, void* dummy);
+    extern (C) void qtd_core_initCallBacks(void* toUtf8, void* dummy, void* del_d_obj);
     static this() {
-        qtd_core_initCallBacks(&qtd_toUtf8, &qtd_dummy);
-    }
-
-    extern (C) void qtd_QObjectEntity_initCallBacks(void* del_d_obj);
-    static this() {
-        qtd_QObjectEntity_initCallBacks(&qtd_delete_d_qobject);
+        qtd_core_initCallBacks(&qtd_toUtf8, &qtd_dummy, &qtd_delete_d_object);
     }
 }
 
@@ -225,7 +283,7 @@ void Q_UNUSED(T)(T x) { qUnused(x); }
 //class QString;
 //char[] qPrintable(QString string) { string.toLocal8Bit().constData(); }
 //TODO(katrina) These should probably actually call into the c++ functions
-void qDebug( char[] str ) /* print debug message */
+void qDebug(string str) /* print debug message */
 { writeln(str); }
 
 extern (C) void Qt_qWarning( char * );

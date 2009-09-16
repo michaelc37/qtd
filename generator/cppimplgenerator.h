@@ -105,11 +105,12 @@ public:
                                     const AbstractMetaFunction *java_function,
                                     const AbstractMetaClass *java_class,
                                     Option options = NoOption);
-    void writeFinalDestructor(QTextStream &s, const AbstractMetaClass *cls);
+    void writeDestructor(QTextStream &s, const AbstractMetaClass *cls);
     void writeFinalConstructor(QTextStream &s,
                                const AbstractMetaFunction *java_function,
                                const QString &qt_object_name,
                                const QString &java_object_name);
+    void writeObjectFunctions(QTextStream &s, const AbstractMetaClass *java_class);
     void writeQObjectFunctions(QTextStream &s, const AbstractMetaClass *java_class);
     void writeFunctionCall(QTextStream &s,
                            const QString &variable_name,

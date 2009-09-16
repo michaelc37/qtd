@@ -251,7 +251,7 @@ add_custom_command(OUTPUT ${dgen_impl}
 	    --source-directory=${CMAKE_SOURCE_DIR}/generator 
 	    qtjambi_masterinclude.h  
 	    ${CMAKE_BINARY_DIR}/CMakeFiles/build.txt
-	COMMENT "Generating binding..."
+	COMMENT "Generating binding... ${inc_paths} ${GEN_OPT}"
 	DEPENDS ${gen_sources} ${CMAKE_BINARY_DIR}/CMakeFiles/build.txt
 )       
 add_custom_target(dgen ALL DEPENDS ${dgen_impl} COMMENT "")     

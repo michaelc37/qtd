@@ -70,9 +70,9 @@ if (NOT ONE_BUILD_COMMAND)
 endif(NOT ONE_BUILD_COMMAND)
 
 ## Specific flags for build configurations.
-## TODO: Add another targets.
+## TODO: Add other targets.
 set(D_RELEASE_FLAGS -O -release)
-set(D_DEBUG_FLAGS -g )
+set(D_DEBUG_FLAGS -g -debug=QtdVerbose)
 if(D_IS_LLVM)
     set(D_RELEASE_FLAGS ${D_RELEASE_FLAGS} -enable-inlining)
     set(D_DEBUG_FLAGS ${D_DEBUG_FLAGS} -d-debug)

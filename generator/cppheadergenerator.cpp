@@ -126,7 +126,7 @@ void CppHeaderGenerator::write(QTextStream &s, const AbstractMetaClass *java_cla
       << "#define " << include_block << endl << endl
 //      << "#include <qtjambi_core.h>" << endl
       << "#include <QtCore/QHash>" << endl
-      << "#include <QObjectEntity.h>" << endl;
+      << "#include <qtd_core.h>" << endl;
 
     Include inc = java_class->typeEntry()->include();
     s << "#include ";
@@ -180,7 +180,7 @@ void CppHeaderGenerator::write(QTextStream &s, const AbstractMetaClass *java_cla
       << " : public " << java_class->qualifiedCppName();
     if (java_class->isQObject())
         s << ", public QtD_QObjectEntity";
-    else if(java_class->hasVirtualFunctions())
+    else if (java_class->hasVirtualFunctions())
         s << ", public QtD_Entity";
     s << endl  << "{" << endl;
 
@@ -207,9 +207,10 @@ void CppHeaderGenerator::write(QTextStream &s, const AbstractMetaClass *java_cla
         if (function->isConstructor() && !function->isPrivate())
             writeFunction(s, function);
     }
-
-    s << "    ~" << shellClassName(java_class) << "();" << endl;
-    s << endl;
+    
+    if (java_class->hasVirtualFunctions())
+        s << "    ~" << shellClassName(java_class) << "();" << endl << endl;
+    
 
     // All functions in original class that should be reimplemented in shell class
     AbstractMetaFunctionList shell_functions = java_class->functionsInShellClass();

@@ -33,7 +33,7 @@ version (Tango)
 }
 
 
-public class QVariant : QtdObject
+public class QVariant : QtdObjectBase
 {
     enum Type {
         Invalid = 0,
@@ -481,7 +481,7 @@ public class QVariant : QtdObject
 
     public final QVariant operator_assign(QVariant other) {
         void* __qt_return_value = qtd_QVariant_operator_assign_QVariant(__nativeId, other is null ? null : other.__nativeId);
-        return new QVariant(__qt_return_value, QtdObjectFlags.nativeOwnership);
+        return new QVariant(__qt_return_value, QtdObjectFlags.skipNativeDelete);
     }
 
     private final bool operator_equal(QVariant v) {

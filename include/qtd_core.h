@@ -13,6 +13,7 @@
 #define QTD_CORE_H
 
 #include <QAbstractItemModel>
+#include <QObject>
 
 #if defined WIN32
   #define DLL_PUBLIC __declspec(dllexport)
@@ -34,6 +35,10 @@
     extern "C" TYPE NAME ARGS;
 #endif
 
+
+//TODO: user data ID must be registered with QObject::registerUserData;
+#define userDataId 0
+
 struct QModelIndexAccessor {
 	int row;
 	int col;
@@ -46,14 +51,6 @@ struct DArray {
     void* ptr;
 };
 
-enum QtdObjectFlags
-{
-    qNone,
-    qNativeOwnership            = 0x01,
-    qDOwnership                 = 0x02
-    //gcManaged                 = 0x04
-};
-
 class QtD_Entity
 {
 public:
@@ -64,6 +61,15 @@ public:
     }
 };
 
+class QtD_QObjectEntity : public QtD_Entity, public QObjectUserData
+{
+public:
+    QtD_QObjectEntity(QObject *qObject, void *dId);
+    virtual ~QtD_QObjectEntity();
+    void destroyEntity(QObject *qObject = NULL);
+    static QtD_QObjectEntity* getQObjectEntity(const QObject *qObject);
+};
+
 #define Array DArray
 
 #ifdef CPP_SHARED
@@ -72,10 +78,12 @@ typedef void (*pfunc_abstr)();
 
 QTD_EXPORT(void, qtd_toUtf8, (const unsigned short* arr, uint size, void* str))
 QTD_EXPORT(void, qtd_dummy, ())
+QTD_EXPORT(void, qtd_delete_d_object, (void* dPtr))
 
 #ifdef CPP_SHARED
 #define qtd_toUtf8 qtd_get_qtd_toUtf8()
 #define qtd_dummy qtd_get_qtd_dummy()
+#define qtd_delete_d_object qtd_get_qtd_delete_d_object()
 #endif
 
 extern "C" QModelIndex qtd_to_QModelIndex(QModelIndexAccessor mia);

@@ -61,6 +61,24 @@ void Generator::generate()
                                .arg(metaObject()->className()));
         return;
     }
+    
+    {
+        FileOut fileOut("temp.txt");
+        foreach (AbstractMetaClass *cls, m_classes) {
+           
+               fileOut.stream << cls->name();
+               if (cls->typeEntry()->isValue())
+                   fileOut.stream << ", value";
+               if (cls->isQObject())
+                   fileOut.stream << ", QObject";
+               else if (cls->typeEntry()->isObject())
+                   fileOut.stream << ", object";                                  
+               if (cls->hasVirtualFunctions())
+                   fileOut.stream << ", polymorphic";              
+               fileOut.stream << endl;
+           
+        }
+    }
 
 
     foreach (AbstractMetaClass *cls, m_classes) {

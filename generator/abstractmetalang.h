@@ -685,6 +685,7 @@ public:
           m_functions_fixed(false),
           m_has_public_destructor(true),
           m_force_shell_class(false),
+          m_has_virtual_destructor(false),
           m_has_hash_function(false),
           m_has_equals_operator(false),
           m_has_clone_operator(false),
@@ -755,8 +756,16 @@ public:
 
     QString baseClassName() const { return m_base_class ? m_base_class->name() : QString(); }
 
-    AbstractMetaClass *baseClass() const { return m_base_class; }
+    AbstractMetaClass *baseClass() const { return m_base_class;}
     void setBaseClass(AbstractMetaClass *base_class) { m_base_class = base_class; }
+
+    const AbstractMetaClass *rootClass() const
+    {
+        const AbstractMetaClass *root = this;
+        while (root->baseClass())
+            root = root->baseClass();
+        return root;
+    }
 
     const AbstractMetaClass *enclosingClass() const { return m_enclosing_class; }
     void setEnclosingClass(AbstractMetaClass *cl) { m_enclosing_class = cl; }
@@ -775,8 +784,10 @@ public:
     void setForceShellClass(bool on) { m_force_shell_class = on; }
     bool generateShellClass() const;
 
-    bool hasVirtualSlots() const { return m_has_virtual_slots; }
+    bool hasVirtualSlots() const { return m_has_virtual_slots; }       
     bool hasVirtualFunctions() const { return !isFinal() && m_has_virtuals; }
+    bool hasVirtualDestructor() const { return m_has_virtual_destructor; }
+    bool setHasVirtualDestructor(bool value) { m_has_virtual_destructor = value; }
     bool hasProtectedFunctions() const;
 
     QList<TypeEntry *> templateArguments() const { return m_template_args; }
@@ -843,6 +854,8 @@ public:
 
     void setTypeAlias(bool typeAlias) { m_is_type_alias = typeAlias; }
     bool isTypeAlias() const { return m_is_type_alias; }
+    
+    bool isPolymorphic();
 
     const QStringList &depends() { return m_type_entry->depends(); }
 
@@ -857,6 +870,7 @@ private:
     uint m_functions_fixed : 1;
     uint m_has_public_destructor : 1;
     uint m_force_shell_class : 1;
+    uint m_has_virtual_destructor : 1; 
     uint m_has_hash_function : 1;
     uint m_has_equals_operator : 1;
     uint m_has_clone_operator :1;

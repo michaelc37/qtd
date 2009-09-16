@@ -1310,10 +1310,8 @@ void AbstractMetaBuilder::traverseFunctions(ScopeModelItem scope_item, AbstractM
                 meta_class->setHasNonPrivateConstructor(true);
             }
 
-            // Classes with virtual destructors should always have a shell class
-            // (since we aren't registering the destructors, we need this extra check)
-            if (meta_function->isDestructor() && !meta_function->isFinal())
-                meta_class->setForceShellClass(true);
+            if (meta_function->isDestructor() && !meta_function->isFinal())                            
+                meta_class->setHasVirtualDestructor(true);            
 
             if (!meta_function->isDestructor()
                 && !meta_function->isInvalid()
@@ -1563,8 +1561,8 @@ AbstractMetaFunction *AbstractMetaBuilder::traverseFunction(FunctionModelItem fu
 
     TypeInfo function_type = function_item->type();
     if (function_name.startsWith('~')) {
-        meta_function->setFunctionType(AbstractMetaFunction::DestructorFunction);
-        meta_function->setInvalid(true);
+        meta_function->setFunctionType(AbstractMetaFunction::DestructorFunction);              
+        //meta_function->setInvalid(true);
     } else if (strip_template_args(function_name) == stripped_class_name) {
         meta_function->setFunctionType(AbstractMetaFunction::ConstructorFunction);
         meta_function->setName(m_current_class->name());

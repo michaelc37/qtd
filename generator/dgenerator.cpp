@@ -61,7 +61,7 @@ DGenerator::DGenerator()
       m_docs_enabled(false),
       m_native_jump_table(false),
       m_recursive(0),
-      m_isRecursive(false)
+      m_isRecursive(false)      
 {
     excludedTypes << "long long" << "bool" << "int" << "QString" << "char" << "WId"
                   << "unsigned char" << "uint" << "double" << "short" << "float"
@@ -479,9 +479,9 @@ void DGenerator::writePrivateNativeFunction(QTextStream &s, const AbstractMetaFu
 static QString function_call_for_ownership(TypeSystem::Ownership owner)
 {  
     if (owner == TypeSystem::CppOwnership) {
-        return "__setFlags(QtdObjectFlags.nativeOwnership, true)";
+        return "__nativeOwnership = true";
     } else /* qtd 2 if (owner == TypeSystem::TargetLangOwnership) */ {
-        return "__setFlags(QtdObjectFlags.nativeOwnership, false)";
+        return "__nativeOwnership = false";
     }/* else if (owner == TypeSystem::DefaultOwnership) {
         return "__no_real_delete = false";
 
@@ -639,6 +639,7 @@ void DGenerator::writeJavaCallThroughContents(QTextStream &s, const AbstractMeta
         }
     }
 
+    /*
     QList<ReferenceCount> referenceCounts;
     for (int i=0; i<arguments.size() + 1; ++i) {
         referenceCounts = d_function->referenceCounts(d_function->implementingClass(),
@@ -649,6 +650,8 @@ void DGenerator::writeJavaCallThroughContents(QTextStream &s, const AbstractMeta
     }
 
     referenceCounts = d_function->referenceCounts(d_function->implementingClass(), 0);
+    */
+    
     AbstractMetaType *return_type = d_function->type();
     QString new_return_type = QString(d_function->typeReplaced(0)).replace('$', '.');
     bool has_return_type = new_return_type != "void"
@@ -880,7 +883,7 @@ void DGenerator::writeJavaCallThroughContents(QTextStream &s, const AbstractMeta
             s << INDENT << "this." << function_call_for_ownership(owner) << ";" << endl;
     }
 
-    // return value marschalling
+    // return value marshalling
     if(return_type) {
         if (!returnImmediately && !d_function->storeResult()) {
             s << INDENT;
@@ -892,37 +895,36 @@ void DGenerator::writeJavaCallThroughContents(QTextStream &s, const AbstractMeta
             s << " __d_return_value = ";
         }
 
-        if ( ( has_return_type && d_function->argumentReplaced(0).isEmpty() )) // qtd
-        {
-            if(return_type->isQObject())
-                s << return_type->name() << ".__getObject(ret);" << endl;
-        }
+        if(return_type->isQObject())
+            s << return_type->name() << ".__wrap(ret);" << endl;
+        
 
-        if (return_type->isValue() && !return_type->typeEntry()->isStructInD())
+        if (return_type->isValue() && !return_type->typeEntry()->isStructInD()
+            || return_type->isNativePointer() && return_type->typeEntry()->isValue()
+            || return_type->name() == "QVariant")
             s << "new " << return_type->name() << "(ret);" << endl;
-
-        if (return_type->isVariant())
-            s << "new QVariant(ret);" << endl;
-
-        if (return_type->isNativePointer() && return_type->typeEntry()->isValue())
-            s << "new " << return_type->name() << "(ret, QtdObjectFlags.nativeOwnership);" << endl;
-
+        
         if (return_type->isObject()) {
             if(d_function->storeResult())
-                s << INDENT << QString("__m_%1.__nativeId = ret;").arg(d_function->name()) << endl
-                  << INDENT << QString("return __m_%1;").arg(d_function->name()) << endl;
+            {
+                QString fieldName = QString("__m_%1;").arg(d_function->name());
+                s << INDENT << "if (!" << fieldName << " || " << fieldName << ".__nativeId != ret) {" << endl
+                  << INDENT << "    " << fieldName << " = " << return_type->name() << ".__wrap(ret);" << endl
+                  << INDENT << "return " << fieldName << ";" << endl;
+            }
             else
-                s << "qtd_" << return_type->name() << "_from_ptr(ret);" << endl;
-            s << endl;
+                s << return_type->name() << ".__wrap(ret);" << endl;
         }
 
         if (return_type->isArray()) {
             s << "ret[0 .. " << return_type->arrayElementCount() << "];" << endl;
         }
 
+        /*
         foreach (ReferenceCount referenceCount, referenceCounts) {
             writeReferenceCount(s, referenceCount, "__d_return_value");
         }
+        */
 
         if (!returnImmediately && !d_function->storeResult())
             s << INDENT << "return __d_return_value;" << endl;
@@ -1682,26 +1684,19 @@ void DGenerator::writeDestructor(QTextStream &s, const AbstractMetaClass *d_clas
     if (!d_class->hasConstructors())
         return;
 
-    bool isTheQObject = d_class->name() == "QObject";
-    if (isTheQObject || !d_class->isQObject())
-    {
-        s << INDENT << "protected override void __deleteNative() {" << endl;
-        {
-            if (isTheQObject)
-                s << INDENT << "qtd_delete_qobject(__nativeId);" << endl;
-            else if (!d_class->isQObject())
-                s << INDENT << "qtd_" << d_class->name() << "_destructor(__nativeId);" << endl;
-        }
-        s << INDENT << "}" << endl << endl;
-    }
+    s << "    override void __deleteNative() {" << endl
+        << "        qtd_" << d_class->name() << "_destructor(__nativeId);" << endl          
+        << "    }" << endl;
 }
 
-void DGenerator::writeFlagsSetter(QTextStream &s, const AbstractMetaClass *d_class)
+void DGenerator::writeOwnershipSetter(QTextStream &s, const AbstractMetaClass *d_class)
 {
     if (d_class->isInterface() || d_class->isNamespace())
-        s << INDENT << "void __setFlags(QtdObjectFlags flags, bool val);";
-    else // COMPILER BUG:
-        s << INDENT << "void __setFlags(QtdObjectFlags flags, bool val) { super.__setFlags(flags, val); }";
+        s << INDENT << "void __nativeOwnership(bool value);";
+    else if (d_class->typeEntry()->isObject())
+    {// COMPILER BUG:
+        s << INDENT << "void __nativeOwnership(bool value) { super.__nativeOwnership = value; }";
+    }
 }
 
 void DGenerator::writeSignalHandlers(QTextStream &s, const AbstractMetaClass *d_class)
@@ -1763,7 +1758,7 @@ void DGenerator::writeSignalHandlers(QTextStream &s, const AbstractMetaClass *d_
                     if(ctype->isAbstract())
                         type_name = type_name + "_ConcreteWrapper";
                     s << INDENT << "scope " << arg_name << " = new " << type_name
-                                << "(cast(void*)(" << arg_ptr << "), QtdObjectFlags.nativeOwnership);" << endl;
+                                << "(cast(void*)(" << arg_ptr << "), QtdObjectFlags.skipNativeDelete);" << endl;
                 }
                 s << endl;
             }
@@ -1785,7 +1780,7 @@ void DGenerator::writeSignalHandlers(QTextStream &s, const AbstractMetaClass *d_
 
 void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
 {
-    ReportHandler::debugSparse("Generating class: " + d_class->fullName());
+    ReportHandler::debugSparse("Generating class: " + d_class->fullName());    
 
     bool fakeClass = d_class->attributes() & AbstractMetaAttributes::Fake;
 
@@ -1795,7 +1790,7 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
     auxFile.isDone = true;
     auxFile.stream << "module " << auxModName << ";" << endl << endl;
 
-    bool staticInit = d_class->isQObject() || (cpp_shared && d_class->generateShellClass() && !d_class->isInterface());
+    bool staticInit = (d_class->typeEntry()->isObject() && d_class->hasVirtualFunctions()) || (cpp_shared && d_class->generateShellClass() && !d_class->isInterface());
     if (staticInit)
     {
         auxFile.isDone = false;
@@ -1901,17 +1896,17 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
     if (!m_isRecursive) {
         s << "public import qt.QGlobal;" << endl
           << "public import qt.core.Qt;" << endl
-          << "private import qt.QtdObject;" << endl
+          << "public import qt.QtdObject;" << endl
           << "private import qt.core.QString;" << endl
           << "private import qt.qtd.Array;" << endl;
         if (d_class->isQObject()) {
-            s << "public import qt.Signal;" << endl
-              << "public import qt.core.QMetaObject;" << endl
-              << "public import qt.qtd.Traits;" << endl;
-
+            s << "public import qt.Signal;" << endl;
             if (d_class->name() != "QObject")
                 s << "public import qt.core.QObject;" << endl;
         }
+        
+        if (d_class->typeEntry()->isObject() && d_class->hasVirtualFunctions())
+            s << "public import qt.core.QMetaObject;" << endl;
 
         // qtd2 hack!
         if (d_class->name() == "QCoreApplication")
@@ -2003,12 +1998,15 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
     }
 
     if (!d_class->isNamespace() && !d_class->isInterface()) {
-        if (!d_class->baseClassName().isEmpty()) {
-            s << " : " << d_class->baseClass()->name();
-        } else {
-            QString sc = type->defaultSuperclass();
-            if ((sc != d_class->name()) && !sc.isEmpty())
-                s << " : " << sc;
+        s << " : ";
+        if (d_class->baseClass()) {            
+            s << d_class->baseClass()->name();
+        } else {            
+            if (d_class->typeEntry()->isValue())
+                s << "QtdObjectBase";
+            else if (d_class->typeEntry()->isObject())
+                s << "QtdObject";
+                
         }
     }/* qtd else if (d_class->isInterface()) {
         s << " extends QtJambiInterface";
@@ -2194,7 +2192,6 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
     if(d_class->isInterface())
         s << endl << INDENT << "public void* __ptr_" << d_class->name() << "();" << endl << endl;
 
-
     s << "// Field accessors" << endl;
     // Field accessors
     AbstractMetaFieldList fields = d_class->fields();
@@ -2203,38 +2200,20 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
             writeFieldAccessors(s, field);
     }
 
-/* qtd
-
-    // the static fromNativePointer function...
-    if (!d_class->isNamespace() && !d_class->isInterface() && !fakeClass) {
-        s << endl
-          << INDENT << "public static native " << d_class->name() << " fromNativePointer("
-          << "QNativePointer nativePointer);" << endl;
+    if (d_class->typeEntry()->isObject() && d_class->hasVirtualFunctions())
+    {
+        if (d_class->isQObject())
+            writeQObjectFunctions(s, d_class);
+        else
+            writeObjectFunctions(s, d_class);
+    
+        s << "    static QtdObjectBase __createWrapper(void* nativeId, QtdObjectFlags flags) {" << endl
+          << "        return new(flags) " << d_class->name() << "(nativeId, flags);" << endl
+          << "    }" << endl << endl;
     }
-
-    if (d_class->isQObject()) {
-        s << endl;
-        if (TypeDatabase::instance()->includeEclipseWarnings())
-            s << INDENT << "@SuppressWarnings(\"unused\")" << endl;
-
-        s << INDENT << "private static native long originalMetaObject();" << endl;
-    }
-
-    // The __qt_signalInitialization() function
-    if (signal_funcs.size() > 0) {
-        s << endl
-          << INDENT << "@Override" << endl
-          << INDENT << "@QtBlockedSlot protected boolean __qt_signalInitialization(String name) {" << endl
-          << INDENT << "    return (__qt_signalInitialization(nativeId(), name)" << endl
-          << INDENT << "            || super.__qt_signalInitialization(name));" << endl
-          << INDENT << "}" << endl
-          << endl
-          << INDENT << "@QtBlockedSlot" << endl
-          << INDENT << "private native boolean __qt_signalInitialization(long ptr, String name);" << endl;
-    }
-*/
-    if (d_class->isQObject())
-        writeQObjectFunctions(s, d_class);
+    
+    if (d_class->hasPublicDestructor() && (!d_class->baseClass() || !d_class->hasVirtualFunctions()))
+        writeDestructor(s, d_class);
 
     // Add dummy constructor for use when constructing subclasses
     if (!d_class->isNamespace() && !d_class->isInterface() && !fakeClass) {
@@ -2244,20 +2223,19 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
 
 
         Indentation indent(INDENT);
-
-        s << "(void* native_id, QtdObjectFlags flags = QtdObjectFlags.none) {" << endl
-          << INDENT << "super(native_id, flags);" << endl;
-
+        
+       
+        QString flags = d_class->hasVirtualFunctions() && d_class->typeEntry()->isObject() ? "QtdObjectFlags.hasDId" : "QtdObjectFlags.none";
+        s << "(void* nativeId, QtdObjectFlags flags = " << flags << ") {" << endl
+        << INDENT << "super(nativeId, flags);" << endl;
+        
         if (d_class->name() == "QObject")
         {
-            // To prevent GC from collecting the object, add it to the statically rooted linked list
-            s << INDENT << "    __next = __root;" << endl
-            << INDENT << "    __root = this;" << endl
-            << INDENT << "    if (__next) {" << endl
-            << INDENT << "        __next.__prev = this;" << endl
-            << INDENT << "    }" << endl << endl;
+            s << INDENT << "if (!(__flags & QtdObjectFlags.hasDId))" << endl
+            << INDENT << "    __createEntity;" << endl;
         }
-
+        
+        
         /*
         if (cpp_shared) {
             if (d_class->generateShellClass() && !d_class->isInterface())
@@ -2266,6 +2244,7 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
         }
         */
 
+        
         // customized store-result instances
         d_funcs = d_class->functionsInTargetLang();
         for (int i=0; i<d_funcs.size(); ++i) {
@@ -2285,10 +2264,7 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
                 if(ctype->isAbstract())
                     type_name = type_name + "_ConcreteWrapper";
 
-                s << INDENT << "    __m_" << d_function->name() << " = new "
-                        << type_name << "(cast(void*)null);" << endl;
-                if (d_function->type()->isQObject())
-                    s << INDENT << "    __m_" << d_function->name() << ".__setFlags(QtdObjectFlags.nativeOwnership, true);" << endl;
+                s << INDENT << "    __m_" << d_function->name() << ";" << endl;                
             }
         }
 
@@ -2340,9 +2316,7 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
                 s << INDENT << "private void* __m_ptr_" << iface->name() << ";" << endl
                   << INDENT << "public void* __ptr_" << iface->name() << "() { return __m_ptr_" << iface->name() << "; }" << endl << endl;
             }
-        }
-
-        writeDestructor(s, d_class);
+        }       
     }
 
 /* qtd
@@ -2371,7 +2345,7 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
 
 /* qtd    writeJavaLangObjectOverrideFunctions(s, d_class);
 */
-    writeFlagsSetter(s, d_class);
+    writeOwnershipSetter(s, d_class);
     s << "// Injected code in class" << endl;
     writeExtraFunctions(s, d_class);
 // qtd2    writeToStringFunction(s, d_class);
@@ -2411,9 +2385,8 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
         s << INDENT << "public class " << d_class->name() << "_ConcreteWrapper : " << d_class->name() << " {" << endl;
 
         {
-            Indentation indent(INDENT);
-            QString hasShellFlag = d_class->generateShellClass() ? " | QtdObjectFlags.hasShell" : "";
-            s << INDENT << "public this(void* native_id, QtdObjectFlags flags = QtdObjectFlags.nativeOwnership) {" << endl
+            Indentation indent(INDENT);            
+            s << INDENT << "public this(void* native_id, QtdObjectFlags flags) {" << endl
               << INDENT << "    super(native_id, flags);" << endl << endl;
             
             /******************!!!DUPLICATE!!!*********************/
@@ -2432,9 +2405,7 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
                     if(ctype->isAbstract())
                         type_name = type_name + "_ConcreteWrapper";
                     s << INDENT << "    __m_" << d_function->name() << " = new "
-                            << type_name << "(cast(void*)null);" << endl;
-                    if (d_function->type()->isQObject())
-                        s << INDENT << "    __m_" << d_function->name() << ".__setFlags(QtdObjectFlags.nativeOwnership, true);" << endl;
+                            << type_name << "(cast(void*)null);" << endl;                    
                 }
             }
 
@@ -2489,18 +2460,22 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
         s  << INDENT << "}" << endl << endl;
     }
 
-    if (d_class->generateShellClass()) { // qtd2
-        if (d_class->hasVirtualFunctions()
-            && (d_class->typeEntry()->isObject() && !d_class->typeEntry()->isQObject()) )
-        s << endl << "extern (C) void *__" << d_class->name() << "_entity(void *q_ptr);" << endl << endl;
+    if (d_class->typeEntry()->isObject() && d_class->hasVirtualFunctions())
+    {
+        if (!d_class->typeEntry()->isQObject())
+        {
+            s << "extern(C) void* qtd_" << d_class->name() << "_dId(void *q_ptr);" << endl << endl;
+            s << "extern(C) void* qtd_" << d_class->name() << "_typeId(void* nativeId);" << endl;
+        }
+        
+        s << "extern(C) void* qtd_" << d_class->name() << "_staticTypeId();" << endl;
     }
 
-
 //    if (d_class->needsConversionFunc)
-        writeConversionFunction(s, d_class);
+//        writeConversionFunction(s, d_class);
 
-    if (d_class->hasConstructors() && !d_class->isQObject())
-        s << "extern (C) void qtd_" << d_class->name() << "_destructor(void *ptr);" << endl << endl;
+    if (d_class->hasConstructors())
+        s << "extern(C) void qtd_" << d_class->name() << "_destructor(void *ptr);" << endl << endl;
 
     // qtd
     s << endl << "// C wrappers" << endl;
@@ -2525,7 +2500,7 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
                 writePrivateNativeFunction(s, d_function);
             }
         }
-    }
+   }
 
 
     foreach (const AbstractMetaField *field, fields) {
@@ -2558,7 +2533,7 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
 
         s << "extern(C) void static_init_" << d_class->name() << "() {" << endl;
 
-        if (d_class->isQObject()) {
+        if (d_class->typeEntry()->isObject() && d_class->hasVirtualFunctions()) {
             s << INDENT << "if (!" << d_class->name() << "._staticMetaObject) " << endl
             << INDENT << "    " << d_class->name() << ".createStaticMetaObject;" << endl << endl;
         }
@@ -2620,6 +2595,7 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
     }
 }
 
+/*
 void DGenerator::writeConversionFunction(QTextStream &s, const AbstractMetaClass *d_class)
 {
     const ComplexTypeEntry *ctype = d_class->typeEntry();
@@ -2640,19 +2616,73 @@ void DGenerator::writeConversionFunction(QTextStream &s, const AbstractMetaClass
     // if class has virtual functions then it has classname_entity function so
     // we can look for D Object pointer. otherwise create new wrapper
     if (d_class->hasVirtualFunctions()) {
-        s << INDENT << "void* d_obj = __" << ctype->targetLangName() << "_entity(ret);" << endl
+        s << INDENT << "void* d_obj = qtd_" << ctype->targetLangName() << "_dId(ret);" << endl
           << INDENT << "if (d_obj !is null) {" << endl
           << INDENT << "    auto d_obj_ref = cast (Object) d_obj;" << endl
           << INDENT << "    return cast(" << return_type_name << ") d_obj_ref;" << endl
           << INDENT << "} else {" << endl
-          << INDENT << "    auto return_value = new " << type_name << "(ret, QtdObjectFlags.nativeOwnership);" << endl
+          << INDENT << "    auto return_value = new " << type_name << "(ret, QtdObjectFlags.skipNativeDelete);" << endl
           << INDENT << "    return return_value;" << endl
           << INDENT << "}" << endl;
     } else {
-        s << INDENT << "auto return_value = new " << type_name << "(ret, QtdObjectFlags.nativeOwnership);" << endl
+        s << INDENT << "auto return_value = new " << type_name << "(ret, QtdObjectFlags.skipNativeDelete);" << endl
           << INDENT << "return return_value;" << endl;
     }
     s << "}" << endl << endl;
+}
+*/
+
+// Polymorphic non-QObject
+void DGenerator::writeObjectFunctions(QTextStream &s, const AbstractMetaClass *d_class)
+{   
+    QString rootClassName = d_class->rootClass()->name();
+    QString concreteArg;
+    if (d_class->isAbstract())
+        concreteArg += ", " + d_class->name() + "_ConcreteWrapper";      
+
+  s << "    private static QtdMetaObject _staticMetaObject;" << endl
+    //<< "    private static QtdMetaObject[void*] _nativeToTargetMap;" << endl
+    
+    << "    protected static void createStaticMetaObject() {" << endl
+    << "        assert(!_staticMetaObject);" << endl
+    << "        QtdMetaObject base;" << endl;
+
+    if (d_class->baseClass())
+    {
+        QString baseName = d_class->baseClassName();
+        s << "        if (!" << baseName << "._staticMetaObject)" << endl
+        << "            " << baseName << ".createStaticMetaObject;" << endl
+        << "        base = " << baseName << "._staticMetaObject;" << endl;
+    }
+    
+    s << "        _staticMetaObject = new QtdMetaObject(qtd_" << d_class->name() << "_staticTypeId, base);"   << endl
+    << "        _staticMetaObject.construct!(" << d_class->name() << concreteArg << ");" << endl
+    << "    }" << endl << endl
+
+    << "    QtdMetaObject metaObject() {" << endl
+    << "        return _staticMetaObject;" << endl
+    << "    }" << endl << endl
+    
+    << "    static QtdMetaObject staticMetaObject() {" << endl
+    << "        return _staticMetaObject;" << endl
+    << "    }" << endl << endl
+
+    << "    static " << d_class->name() << " __wrap(void* nativeId, QtdObjectFlags flags = QtdObjectFlags.skipNativeDelete) {" << endl
+    << "        auto obj = cast("  << d_class->name() << ") qtd_" << rootClassName << "_dId(nativeId);" << endl
+    << "        if (!obj)" << endl
+    << "            obj = static_cast!(" << d_class->name() << ")(_staticMetaObject.wrap(nativeId,"
+                        "qtd_" << rootClassName << "_typeId(nativeId), flags));" << endl
+    << "        return obj;" << endl                   
+    << "    }" << endl << endl;
+    /*
+    << "    overrive protected void __addMapping() {" << endl
+    << "        _nativeToTargetMap[__nativeId] = this;" << endl
+    << "    }" << endl << endl
+    
+    << "    override protected void __removeMapping() {" << endl
+    << "        _nativeToTargetMap.remove(__nativeId);" << endl
+    << "    }" << endl << endl
+    */  
 }
 
 void DGenerator::writeQObjectFunctions(QTextStream &s, const AbstractMetaClass *d_class)
@@ -2686,12 +2716,12 @@ void DGenerator::writeQObjectFunctions(QTextStream &s, const AbstractMetaClass *
     << "        return _staticMetaObject;" << endl
     << "    }" << endl << endl
 
-    << "    static " << d_class->name() << " __getObject(void* nativeId) {" << endl
-    << "        return static_cast!(" << d_class->name() << ")(_staticMetaObject.getObject(nativeId));" << endl
+    << "    static " << d_class->name() << " __wrap(void* nativeId, QtdObjectFlags flags = QtdObjectFlags.none) {" << endl
+    << "        return static_cast!(" << d_class->name() << ")(_staticMetaObject.wrap(nativeId, flags));" << endl
     << "    }" << endl << endl
 
-    << "    static void __createEntity(void* nativeId, void* dId) {" << endl
-    << "        return qtd_" << d_class->name() << "_createEntity(nativeId, dId);" << endl
+    << "    void __createEntity() {" << endl
+    << "        return qtd_" << d_class->name() << "_createEntity(__nativeId, cast(void*)this);" << endl
     << "    }" << endl << endl;
 }
 
@@ -2701,23 +2731,62 @@ void DGenerator::writeMarshallFunction(QTextStream &s, const AbstractMetaClass *
 
 }
 */
-void DGenerator::marshallFromCppToD(QTextStream &s, const ComplexTypeEntry* ctype)
+
+// Returns the name of the resulting variable
+QString DGenerator::marshalToD(QTextStream &s, QString argName, const TypeEntry* type, MarshalFlags flags)
 {
-    if(ctype->isQObject()) {
-        QString type_name = ctype->name();
-        if (ctype->isAbstract())
-            type_name += "_ConcreteWrapper";
-        s << "return " << type_name << ".__getObject(ret);" << endl;
-    } else if (ctype->isValue() && !ctype->isStructInD()) {
-        s << INDENT << "return new " << ctype->name() << "(ret);" << endl;
-    } else if (ctype->isVariant()) {
-        s << INDENT << "return new QVariant(ret);" << endl;
+    if (type->isBasicValue())
+        return argName;
+         
+    QString qtdObjFlags = "QtdObjectFlags.none";    
+    const ObjectTypeEntry *ctype = 0;
+    bool stackObject = false;   
+    
+    if (type->isObject())
+        ctype = static_cast<const ObjectTypeEntry *>(ctype);
+    
+    if (type->isValue())
+        flags |= MarshalScope;  
+    
+    if (flags & MarshalScope)
+    {
+        if (type->isObject() && type->hasVirtualDestructor())
+        {
+            qtdObjectFlags += " | QtdObjectFlags.stackAllocated";
+            bool stackObject = true;
+        }
+        else
+            s << INDENT << "scope ";
+        
+        qtdObjectFlags += "| QtdObjectFlags.skipNativeDelete";
+    }
+    else
+        s << INDENT << "auto ";
+    
+    s << resultName << " = ";        
+    
+            
+    if (ctype->isObject() && type->hasVirtualDestructor()) {        
+        exp = type->name() + ".__wrap(ret);" + endl;
+    }
+    else if (type->isValue())
+    {
+        if (type->actualIndirections() == 0)
+            s << "new " << type->name() << "(" << argName << ");" << endl;
+        else if (type->actualIndirections() == 1)
+            s << "new "         
+    }
+            
+    
     } else if (ctype->name() == "QModelIndex" || ctype->isStructInD()) {
         s << INDENT << "return ret;" << endl;
-    } else if (ctype->isObject()) {
-        QString type_name = ctype->name();
-        s << "return qtd_" << type_name << "_from_ptr(ret);" << endl;
     }
+    
+    if (stackObject)
+    {
+        s << ""
+    }
+    
 }
 
 void DGenerator::writeNativeField(QTextStream &s, const AbstractMetaField *field)
@@ -2850,29 +2919,57 @@ void DGenerator::writeShellVirtualFunction(QTextStream &s, const AbstractMetaFun
                 else if (type->typeEntry()->isValue() && type->isNativePointer() && type->typeEntry()->name() == "QString") {
                     s << INDENT << "auto " << arg_name << "_d_qstr = QString(" << arg_name << ", true);" << endl
                       << INDENT << "string " << arg_name << "_d_ref = " << arg_name << "_d_qstr.toNativeString();";
-                } else if(type->isVariant())
-                    s << INDENT << "scope " << arg_name << "_d_ref = new QVariant(" << arg_name << ", QtdObjectFlags.nativeOwnership);";
+                }
                 else if (type->typeEntry()->isStructInD())
                     continue;
-                else if (!type->hasNativeId() && !(type->typeEntry()->isValue() && type->isNativePointer()))
+                else if ((type->typeEntry()->isValue() && type->isNativePointer())
+                    || type->isValue() || type->isVariant()){
+                    s << INDENT << "scope " << arg_name << "_d_ref = new " << type->typeEntry()->name() << "(" << arg_name << ");" << endl;
+                
+                    (*logstream) << type->name() << ", " << argument->argumentIndex() + 1 << ", "
+                            << implementor->name() << "::" <<  d_function->name();
+                
+                    if (type->typeEntry()->isValue())                    
+                        (*logstream) << ", type entry value";
+                    
+                    if (type->typeEntry()->isValue())                    
+                        (*logstream) << ", value";
+                    
+                    if (type->isNativePointer())                    
+                        (*logstream) << ", native pointer";
+                    
+                    const ComplexTypeEntry* ctype = dynamic_cast<const ComplexTypeEntry*>(type->typeEntry());
+                    if (ctype && ctype->hasVirtualFunctions())                    
+                        (*logstream) << ", polymorphic";
+                    
+                    (*logstream) << endl;
+                }                
+                else if (!type->hasNativeId())
                     continue;
-                else if(type->isObject()
-                    || (type->typeEntry()->isValue() && type->isNativePointer())
-                    || type->isValue() || type->isVariant()) {
-                    QString type_name = type->typeEntry()->name();
-                    const ComplexTypeEntry *ctype = static_cast<const ComplexTypeEntry *>(type->typeEntry());
-                    if(ctype->isAbstract())
-                        type_name = type_name + "_ConcreteWrapper";
-                    s << INDENT << "scope " << arg_name << "_d_ref = new " << type_name << "(" << arg_name << ", QtdObjectFlags.nativeOwnership);";
+                else if (type->isObject() || type->isQObject())
+                {
+                    if (!type->isQObject())
+                    {
+                        (*logstream) << type->name() << ", " << argument->argumentIndex() + 1 << ", "
+                            << implementor->name() << "::" <<  d_function->name();
+                    
+                        (*logstream) << ", object";
+                            
+                        const ComplexTypeEntry* ctype = dynamic_cast<const ComplexTypeEntry*>(type->typeEntry());
+                        if (ctype && ctype->hasVirtualFunctions())                    
+                            (*logstream) << ", polymorphic";
+                        
+                        (*logstream) << endl;
+                    }
+                
+                    if (((ComplexTypeEntry*)type->typeEntry())->hasVirtualFunctions() || !d_function->resetObjectAfterUse(argument->argumentIndex() + 1))
+                        s << INDENT << "auto " << arg_name << "_d_ref = " << type->typeEntry()->name() << ".__wrap(" << arg_name << ");";
+                    else
+                        s << INDENT << "scope " << arg_name << "_d_ref = new " << type->typeEntry()->name() << "(" << arg_name << ", QtdObjectFlags.skipNativeDelete);";
                 }
-                else if (type->isQObject()) {
-                    QString type_name = type->name();
-                    const ComplexTypeEntry *ctype = static_cast<const ComplexTypeEntry *>(type->typeEntry());
-                    if(ctype->isAbstract())
-                        type_name = type_name + "_ConcreteWrapper";
-
-                    s << INDENT << "scope " << arg_name << "_d_ref = new " << type_name << "(" << arg_name << ", QtdObjectFlags.nativeOwnership);" << endl;
-                }
+                else
+                    qFatal(qPrintable(type->typeEntry()->name()));
+                
                 s << endl;
             }
     }
@@ -2973,15 +3070,18 @@ void DGenerator::writeShellVirtualFunction(QTextStream &s, const AbstractMetaFun
 
 void DGenerator::generate()
 {
+    log = new QFile("arglog.txt");
+    log->open(QFile::ReadWrite);
+    logstream = new QTextStream(log);
     // qtd
     // code for including classses in 1 module for avoiding circular imports
     foreach (AbstractMetaClass *cls, m_classes) {
-        const ComplexTypeEntry *ctype = cls->typeEntry();
+        ComplexTypeEntry *ctype = const_cast<ComplexTypeEntry *>(cls->typeEntry());
 
-        if (!cls->isInterface() && cls->isAbstract()) {
-            ComplexTypeEntry *ctype_m = (ComplexTypeEntry *)ctype;
-            ctype_m->setAbstract(true);
-        }
+        if (!cls->isInterface() && cls->isAbstract())            
+            ctype->setAbstract(true);
+                
+        ctype->setHasVirtualFunctions(cls->hasVirtualFunctions());
 
         foreach(QString child, ctype->includedClasses) {
             ComplexTypeEntry *ctype_child = TypeDatabase::instance()->findComplexType(child);
@@ -2990,20 +3090,6 @@ void DGenerator::generate()
 
         foreach (AbstractMetaFunction *function, cls->functions())
             function->checkStoreResult();
-/* we don't need this anymore
-        // generate QObject conversion functions only those that are required
-        AbstractMetaFunctionList d_funcs = cls->functionsInTargetLang();
-        for (int i=0; i<d_funcs.size(); ++i) {
-            AbstractMetaType *f_type = d_funcs.at(i)->type();
-            if (!f_type)
-                continue;
-            if (f_type->isQObject() || f_type->isObject()) {
-                const ComplexTypeEntry* cte = static_cast<const ComplexTypeEntry *>(f_type->typeEntry());
-                AbstractMetaClass* d_class = ClassFromEntry::get(cte);
-                if (d_class)
-                    d_class->needsConversionFunc = true;
-            }
-        }*/
     }
 
     Generator::generate();
@@ -3079,6 +3165,9 @@ void DGenerator::generate()
         }
         file.close();
     }
+    
+    delete logstream;
+    delete log;
 }
 
 void DGenerator::writeFunctionAttributes(QTextStream &s, const AbstractMetaFunction *d_function,

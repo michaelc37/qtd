@@ -884,6 +884,9 @@ public:
     bool isAbstract() const { return m_isAbstract; }
     void setAbstract(bool isAbstract) { m_isAbstract = isAbstract; }
 
+    bool hasVirtualFunctions() const { return m_hasVirtualFunctions; }
+    void setHasVirtualFunctions(bool value) { m_hasVirtualFunctions = value; }
+
     void setDepends(const QStringList &depends) {m_depends = depends; }
     const QStringList &depends() {return m_depends; }
 
@@ -916,6 +919,7 @@ private:
     // qtd
     bool m_isStructInD;
     bool m_isAbstract;
+    bool m_hasVirtualFunctions;
     QStringList m_depends;
 };
 

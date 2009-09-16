@@ -541,17 +541,16 @@ void CppImplGenerator::write(QTextStream &s, const AbstractMetaClass *java_class
 #endif
 */
     if (shellInclude)
-        s << "#include \"" << java_class->name() << "_shell" << ".h\"" << endl;
+    {
+        s << "#include \"" << java_class->name() << "_shell" << ".h\"" << endl
+          << "#include <typeinfo>" << endl;
+    }
+        
 /* qtd
     if (java_class->isQObject())
         s << "#include <qtdynamicmetaobject.h>" << endl;
 */
-    if (java_class->isQObject())
-        s << "#include <QObjectEntity.h>" << endl;
-
     s << "#include <iostream>" << endl;
-
-
 
     Include inc = java_class->typeEntry()->include();
     if (!inc.name.isEmpty()) {
@@ -589,24 +588,27 @@ void CppImplGenerator::write(QTextStream &s, const AbstractMetaClass *java_class
     writeDefaultConstructedValues(s, java_class);
 
     if (hasCustomDestructor(java_class)) */
-    if (!java_class->isQObject())
-        writeFinalDestructor(s, java_class);
+   
+    if (java_class->hasPublicDestructor() && (!java_class->baseClass() || !java_class->hasVirtualFunctions()))
+        writeDestructor(s, java_class);
 
     if (java_class->isQObject())
         writeSignalsHandling(s, java_class);
 
     if (shellClass) {
         foreach (AbstractMetaFunction *function, java_class->functions()) {
-            if (function->isConstructor() && !function->isPrivate())
+            if (function->isConstructor())
                 writeShellConstructor(s, function);
         }
-        writeShellDestructor(s, java_class);
-
-        if (!java_class->isQObject() && java_class->hasVirtualFunctions())
-            writeQtdEntityFunction(s, java_class);
+        
+        if (java_class->typeEntry()->isObject())
+            writeShellDestructor(s, java_class);
 
         if (java_class->isQObject())
             writeQObjectFunctions(s, java_class);
+        else if (java_class->typeEntry()->isObject())
+            writeObjectFunctions(s, java_class);    
+            
 
         // Virtual overrides
         s << "// Virtual overrides" << endl;
@@ -1386,9 +1388,10 @@ void CppImplGenerator::writeShellConstructor(QTextStream &s, const AbstractMetaF
             s << ", ";
     }
     s << ")";
+    
     if (cls->isQObject())
         s << "," << endl << "      QtD_QObjectEntity(this, d_ptr)";
-    else if (cls->hasVirtualFunctions())
+    else if (cls->typeEntry()->isObject() && cls->hasVirtualFunctions())
         s << "," << endl << "      QtD_Entity(d_ptr)";
 /* qtd        s << "    m_meta_object(0)," << endl;
     s << "      m_vtable(0)," << endl
@@ -1402,7 +1405,7 @@ void CppImplGenerator::writeShellConstructor(QTextStream &s, const AbstractMetaF
         writeCodeInjections(s, java_function, cls, CodeSnip::Beginning, TypeSystem::ShellCode);
         writeCodeInjections(s, java_function, cls, CodeSnip::End, TypeSystem::ShellCode);
     }
-    s << "}" << endl << endl;
+    s << "}" << endl << endl;  
 }
 
 void CppImplGenerator::writeShellDestructor(QTextStream &s, const AbstractMetaClass *java_class)
@@ -1411,9 +1414,11 @@ void CppImplGenerator::writeShellDestructor(QTextStream &s, const AbstractMetaCl
       << shellClassName(java_class) << "()" << endl
       << "{" << endl;
     {
-        //s << "    std::cout << \"In shell destructor of " << java_class->name() << ", nativeId: \" << this << std::endl;";  
+        s << "    std::cout << \"In shell destructor of " << java_class->name() << ", nativeId: \" << this << std::endl;";
         if (java_class->isQObject())
-            s << "    destroyEntity(this);";
+            s << "    destroyEntity(this);" << endl;
+        else
+            s << "    qtd_delete_d_object(dId);" << endl;
     }
     s << "}" << endl << endl;
 }
@@ -1729,19 +1734,43 @@ void CppImplGenerator::writePublicFunctionOverride(QTextStream &s,
     s << "}" << endl << endl;
 }
 
-void CppImplGenerator::writeQtdEntityFunction(QTextStream &s, const AbstractMetaClass *java_class)
+void CppImplGenerator::writeObjectFunctions(QTextStream &s, const AbstractMetaClass *java_class)
 {
-    s << "extern \"C\" DLL_PUBLIC void *__" << java_class->name() << "_entity(void *q_ptr)" << endl;
+    s << "extern \"C\" DLL_PUBLIC const void* qtd_" << java_class->name() << "_staticTypeId()" << endl;
     s << "{" << endl;
     {
         Indentation indent(INDENT);
-            s << INDENT << "QtD_Entity* a = dynamic_cast<QtD_Entity*>((" << java_class->qualifiedCppName() << "*)q_ptr);" << endl
-              << INDENT << "if (a != NULL)" << endl
-              << INDENT << "    return a->dId;" << endl
-              << INDENT << "else" << endl
-              << INDENT << "    return NULL;" << endl;
+            s << INDENT << "return &typeid(" << java_class->qualifiedCppName() << ");" << endl;
     }
     s << "}" << endl << endl;
+        
+    if (java_class->hasVirtualFunctions())
+    {
+        if (!java_class->baseClass())
+        {      
+            s << "extern \"C\" DLL_PUBLIC void* qtd_" << java_class->name() << "_dId(void *q_ptr)" << endl;
+            s << "{" << endl;
+            {
+                Indentation indent(INDENT);
+                    s << INDENT << "QtD_Entity* a = dynamic_cast<QtD_Entity*>((" << java_class->qualifiedCppName() << "*)q_ptr);" << endl
+                    << INDENT << "if (a != NULL)" << endl
+                    << INDENT << "    return a->dId;" << endl
+                    << INDENT << "else" << endl
+                    << INDENT << "    return NULL;" << endl;
+            }
+            s << "}" << endl << endl;
+            
+            s << "extern \"C\" DLL_PUBLIC const void* qtd_" << java_class->name() << "_typeId(void *nativeId)" << endl;
+            s << "{" << endl;
+            {
+                Indentation indent(INDENT);
+                    s << INDENT << "return &typeid((" << java_class->qualifiedCppName() << "*)nativeId);" << endl;
+            }
+            s << "}" << endl << endl;
+        }
+        else
+            s << "extern \"C\" DLL_PUBLIC void* qtd_" << java_class->rootClass()->name() << "_dId(void *q_ptr);" << endl;            
+    }
 }
 
 void CppImplGenerator::writeVirtualFunctionOverride(QTextStream &s,
@@ -1863,9 +1892,9 @@ void CppImplGenerator::writeFinalFunctionArguments(QTextStream &s, const Abstrac
 */
     uint nativeArgCount = 0;
     const AbstractMetaClass *cls = java_function->ownerClass();
+          
     if (java_function->isConstructor() &&
-        ( cls->hasVirtualFunctions()
-        || cls->typeEntry()->isObject() ) )
+        cls->typeEntry()->isObject())
     {
         s << "void *d_ptr";
         nativeArgCount++;
@@ -2057,7 +2086,8 @@ void CppImplGenerator::writeFinalFunction(QTextStream &s, const AbstractMetaFunc
         foreach (const AbstractMetaArgument *argument, arguments) {
             s << INDENT << "Q_UNUSED(" << argument->indexedName() << ")" << endl;
         }
-        s << INDENT << default_return_statement_qt(java_function->type()) << "";
+        s << INDENT << default_return_statement_qt(java_function->type()) << "";        
+        
     } else {
         writeFinalFunctionSetup(s, java_function, qt_object_name, cls);
 
@@ -2085,7 +2115,7 @@ void CppImplGenerator::writeFinalFunction(QTextStream &s, const AbstractMetaFunc
                 if (java_class->isQObject())
                     s << "QtD_QObjectEntity::getQObjectEntity((QObject*)__this_nativeId) : false;" << endl;
                 else
-                    s << "__" << java_class->name() << "_entity(__this_nativeId) : false;" << endl;
+                    s << "qtd_" << java_class->rootClass()->name() << "_dId(__this_nativeId) : false;" << endl;
             } else {
                 option = OriginalName;
             }
@@ -2288,17 +2318,19 @@ void CppImplGenerator::writeFieldAccessors(QTextStream &s, const AbstractMetaFie
     }
 }
 
-void CppImplGenerator::writeFinalDestructor(QTextStream &s, const AbstractMetaClass *cls)
-{
-    if (cls->hasConstructors()) {
-        s << INDENT << "extern \"C\" DLL_PUBLIC void qtd_" << cls->name() << "_destructor(void *ptr)" << endl
-          << INDENT << "{" << endl;
-        {
-            s << INDENT << "delete (" << shellClassName(cls) << " *)ptr;" << endl;
-        }
+void CppImplGenerator::writeDestructor(QTextStream &s, const AbstractMetaClass *cls)
+{    
+    if (!cls->hasConstructors())
+        return;
 
-        s << INDENT << "}" << endl << endl;
+    s << INDENT << "extern \"C\" DLL_PUBLIC void qtd_" << cls->name() << "_destructor(void *ptr)" << endl
+        << INDENT << "{" << endl;
+    {
+        QString className = cls->hasVirtualFunctions() ? cls->typeEntry()->name() : shellClassName(cls);
+        s << INDENT << "delete (" << className << " *)ptr;" << endl;
     }
+
+    s << INDENT << "}" << endl << endl;
 }
 
 void CppImplGenerator::writeFinalConstructor(QTextStream &s,
@@ -3051,7 +3083,7 @@ void CppImplGenerator::writeQtToJava(QTextStream &s,
 //            return_type = fixCppTypeName(java_type->typeEntry()->qualifiedCppName());
         }
 /*        if( (java_type->isValue() && !java_type->typeEntry()->isStructInD())
-            || java_type->isObject() )
+//             || java_type->isObject() )
             s << INDENT << return_type << " *" << java_name << " = (" << return_type << "*) ";
         else*/
             s << INDENT << return_type << " " << java_name << " = (" << return_type << ") ";
@@ -3510,7 +3542,7 @@ void CppImplGenerator::writeFunctionCallArguments(QTextStream &s,
 
     int written_arguments = 0;
     const AbstractMetaClass *cls = java_function->ownerClass();
-    if (java_function->isConstructor() && cls->hasVirtualFunctions()) {
+    if (java_function->isConstructor() && cls->typeEntry()->isObject()) {
         s << "d_ptr";
         written_arguments++;
     }

@@ -2363,25 +2363,10 @@
   <object-type name="QObject">
 	<inject-code class="native">
 
-#ifdef CPP_SHARED
-QTD_EXPORT_VAR(qtd_delete_d_qobject);
-
-extern "C" DLL_PUBLIC void qtd_QObjectEntity_initCallBacks(pfunc_abstr del_d_qobj)
-{
-	QTD_EXPORT_VAR_SET(qtd_delete_d_qobject, del_d_qobj);
-}
-#endif
-
-
 extern "C" DLL_PUBLIC void* qtd_get_d_qobject(void *nativeId)
 {
     QtD_QObjectEntity *entity = QtD_QObjectEntity::getQObjectEntity((QObject*)nativeId);
     return entity ? entity-&gt;dId : NULL;
-}
-
-extern "C" DLL_PUBLIC void qtd_delete_qobject(void *nativeId)
-{    
-    delete (QObject*)nativeId;    
 }
 
 extern "C" DLL_PUBLIC void qtd_create_qobject_entity(void* nativeId, void *dId)
@@ -2394,20 +2379,20 @@ extern "C" DLL_PUBLIC void* qtd_QObject_metaObject(void* nativeId)
     return (void*)((QObject*)nativeId)->metaObject();
 }
 
-extern "C" DLL_PUBLIC void qtd_connect(void* nativeId, char* signal, int id, bool dynamicEntity)
-{   
+extern "C" DLL_PUBLIC void qtd_connect(void* nativeId, char* signal, int id, bool hasDId)
+{
     QObject *sender = (QObject*)nativeId;
-    QObject *receiver = dynamicEntity ? dynamic_cast&lt;QObject*&gt;(QtD_QObjectEntity::getQObjectEntity(sender)) : sender;
+    QObject *receiver = hasDId ?  sender : dynamic_cast&lt;QObject*&gt;(QtD_QObjectEntity::getQObjectEntity(sender));
     const QMetaObject *mo = sender->metaObject();
     int nativeSigId = mo-&gt;indexOfSignal(signal);
     QMetaObject::connect(sender, nativeSigId, receiver, receiver-&gt;metaObject()-&gt;methodCount() + id);
 }
 
-extern "C" DLL_PUBLIC void qtd_disconnect(void* nativeId, char* signal, int id, bool dynamicEntity)
+extern "C" DLL_PUBLIC void qtd_disconnect(void* nativeId, char* signal, int id, bool hasDId)
 {
     QObject *sender = (QObject*)nativeId;
-    QObject *receiver = dynamicEntity ? dynamic_cast&lt;QObject*&gt;(QtD_QObjectEntity::getQObjectEntity(sender)) : sender;
-    const QMetaObject *mo = sender->metaObject();    
+    QObject *receiver = hasDId ? sender : dynamic_cast&lt;QObject*&gt;(QtD_QObjectEntity::getQObjectEntity(sender));
+    const QMetaObject *mo = sender->metaObject();
     int nativeSigId = mo-&gt;indexOfSignal(signal);
     QMetaObject::disconnect(sender, nativeSigId, receiver, receiver-&gt;metaObject()-&gt;methodCount() + id);
 }
@@ -2416,23 +2401,11 @@ extern "C" DLL_PUBLIC void qtd_disconnect(void* nativeId, char* signal, int id, 
 
 	<inject-code class="java-free">
 extern(C) void* qtd_get_d_qobject(void* nativeId);
-extern(C) void qtd_delete_qobject(void* nativeId);
 extern(C) void* qtd_create_qobject_entity(void* nativeId, void* dId);
 extern(C) void* qtd_QObject_metaObject(void* nativeId);
-extern(C) void qtd_connect(void *nativeId, cstringz signal, int id, bool dynamicEntity);
-extern(C) void qtd_disconnect(void *nativeId, cstringz signal, int id, bool dynamicEntity);
+extern(C) void qtd_connect(void *nativeId, cstringz signal, int id, bool hasDId);
+extern(C) void qtd_disconnect(void *nativeId, cstringz signal, int id, bool hasDId);
 
-extern(C) void qtd_delete_d_qobject(void* dId)
-{
-    auto obj = cast(QObject)dId;
-	
-	if (!(obj.__flags &amp; QtdObjectFlags.dOwnership))
-	{
-		// Avoid deleting native object twice
-		obj.__setFlags(QtdObjectFlags.nativeOwnership, true);
-		delete obj;
-	}
-}
 	</inject-code>
 
     <modify-function signature="childEvent(QChildEvent*)">
@@ -2589,8 +2562,8 @@ extern(C) void qtd_delete_d_qobject(void* dId)
     <modify-function signature="setUserIniPath(const QString&amp;)" remove="all"/> <!--### Obsolete in 4.3-->
   </object-type>
 
-  <object-type name="QEvent" polymorphic-base="yes" polymorphic-id-expression="%1-&gt;type() == QEvent::None"/>
-  <object-type name="QChildEvent" polymorphic-id-expression="%1-&gt;type() == QEvent::ChildAdded || %1-&gt;type() == QEvent::ChildPolished || %1-&gt;type() == QEvent::ChildRemoved">
+  <object-type name="QEvent"/>
+  <object-type name="QChildEvent">
     <modify-field name="c" read="false" write="false"/>
   </object-type>
   <object-type name="QTimerEvent" polymorphic-id-expression="%1-&gt;type() == QEvent::Timer"/>

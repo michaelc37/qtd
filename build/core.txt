@@ -50,6 +50,8 @@ set (classes
     QUrl
     QAbstractItemModel
     QAbstractFileEngine
+    QAbstractFileEngineIterator
+    QFSFileEngine
     QFile
     QDir
     QFileInfo

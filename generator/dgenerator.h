@@ -45,6 +45,7 @@
 #include "generator.h"
 #include "metajava.h"
 #include "cppimplgenerator.h"
+#include "fileout.h"
 
 #include <QTextStream>
 
@@ -137,7 +138,13 @@ public:
 
     void writeShellVirtualFunction(QTextStream &s, const AbstractMetaFunction *function,
                                           const AbstractMetaClass *implementor, int id);
-    void marshallFromCppToD(QTextStream &s, const ComplexTypeEntry* ctype);
+                                          
+    enum MarshalFlags
+    {        
+        MarhsalScope    = 0x1
+    }
+    
+    void marshalToD(QTextStream &s, const ComplexTypeEntry* ctype);
 
 private:
     QString subDirectoryForPackage(const QString &package) const { return QString(package).replace(".", "/"); }
@@ -151,11 +158,12 @@ private:
     const TypeEntry* fixedTypeEntry(const TypeEntry *type);
 
     void writeDestructor(QTextStream &s, const AbstractMetaClass *d_class);
-    void writeFlagsSetter(QTextStream &s, const AbstractMetaClass *d_class);
+    void writeOwnershipSetter(QTextStream &s, const AbstractMetaClass *d_class);
     void writeSignalHandlers(QTextStream &s, const AbstractMetaClass *d_class);
     void writeEnumAlias(QTextStream &s, const AbstractMetaEnum *d_enum);
     void writeSignalSignatures(QTextStream &s, const AbstractMetaClass *d_class, AbstractMetaFunctionList signal_funcs);
     void writeQObjectFunctions(QTextStream &s, const AbstractMetaClass *d_class);
+    void writeObjectFunctions(QTextStream &s, const AbstractMetaClass *d_class);
     void writeConversionFunction(QTextStream &s, const AbstractMetaClass *d_class);
 
 //    void writeMarshallFunction(QTextStream &s, const AbstractMetaClass *d_class);
@@ -178,6 +186,8 @@ protected:
     QList<const AbstractMetaFunction *> m_nativepointer_functions;
     QList<const AbstractMetaFunction *> m_resettable_object_functions;
     QList<const AbstractMetaFunction *> m_reference_count_candidate_functions;
+    QFile *log;
+    QTextStream *logstream;
 };
 
 class ClassFromEntry : Generator

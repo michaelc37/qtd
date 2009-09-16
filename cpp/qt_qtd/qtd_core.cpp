@@ -11,11 +11,16 @@
 
 #include "qtd_core.h"
 #include <iostream>
+#include <QCryptographicHash>
 
-
-extern "C" DLL_PUBLIC void* qtd_qobject(void* parent)
+extern "C" DLL_PUBLIC void* qtd_test_Object()
 {
-    return new QObject((QObject*)parent);
+    return new QCryptographicHash(QCryptographicHash::Md5);
+}
+
+extern "C" DLL_PUBLIC void qtd_test_delete_Object(void* obj)
+{
+    delete (QCryptographicHash*)obj;
 }
 
 extern "C" DLL_PUBLIC QModelIndex qtd_to_QModelIndex(QModelIndexAccessor mia)
@@ -48,10 +53,13 @@ extern "C" DLL_PUBLIC bool qtd_qSharedBuild()
 #ifdef CPP_SHARED
 QTD_EXPORT_VAR(qtd_toUtf8);
 QTD_EXPORT_VAR(qtd_dummy);
+QTD_EXPORT_VAR(qtd_delete_d_object);
 
-extern "C" DLL_PUBLIC void qtd_core_initCallBacks(pfunc_abstr d_func, pfunc_abstr dummy) {
+extern "C" DLL_PUBLIC void qtd_core_initCallBacks(pfunc_abstr d_func, pfunc_abstr dummy
+    , pfunc_abstr del_d_obj) {
     QTD_EXPORT_VAR_SET(qtd_toUtf8, d_func);
     QTD_EXPORT_VAR_SET(qtd_dummy, dummy);
+    QTD_EXPORT_VAR_SET(qtd_delete_d_object, del_d_obj);
     //std::cout << "qtd_core initialized" << std::endl;
 }
 #endif
@@ -72,4 +80,32 @@ extern "C" DLL_PUBLIC bool qtd_unregister_resource_data(int version, const unsig
                                            const unsigned char *name, const unsigned char *data)
 {
     return qUnregisterResourceData(version, tree, name, data);
+}
+
+
+QtD_QObjectEntity::QtD_QObjectEntity(QObject *qObject, void *dId) : QtD_Entity(dId)
+{
+    qObject->setUserData(userDataId, this);
+}
+
+QtD_QObjectEntity::~QtD_QObjectEntity()
+{
+    if (dId)
+        destroyEntity();
+}
+
+void QtD_QObjectEntity::destroyEntity(QObject *qObject)
+{
+    Q_ASSERT(dId);
+    qtd_delete_d_object(dId);
+    if (qObject)
+    {
+        qObject->setUserData(userDataId, NULL);
+        dId = NULL;
+    }
+}
+
+QtD_QObjectEntity* QtD_QObjectEntity::getQObjectEntity(const QObject *qObject)
+{
+    return static_cast<QtD_QObjectEntity*>(qObject->userData(userDataId));
 }

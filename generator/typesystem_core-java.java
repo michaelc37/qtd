@@ -72,14 +72,7 @@ class QObject___ extends QObject {
         }
     }
     */
-    
-    private
-    {
-        static QObject __root;
-        QObject __next;
-        QObject __prev;
-    }
-    
+       
     override void onSignalHandlerCreated(ref SignalHandler sh)
     {
         sh.signalEvent = &onSignalEvent;
@@ -88,32 +81,21 @@ class QObject___ extends QObject {
     private void onSignalEvent(int signalId, SignalEventId event)
     {
         stringz signature;
-        signalSignature(signalId, signature);        
+        signalSignature(signalId, signature);
         if (signature)
         {
             switch (event)
             {
                 case SignalEventId.firstSlotConnected:
-                    qtd_connect(__nativeId, signature, signalId, cast(bool)(__flags_ & QtdObjectFlags.dynamicEntity));
+                    qtd_connect(__nativeId, signature, signalId, cast(bool)(__flags & QtdObjectFlags.hasDId));
                     break;
                 case SignalEventId.lastSlotDisconnected:
-                    qtd_disconnect(__nativeId, signature, signalId, cast(bool)(__flags_ & QtdObjectFlags.dynamicEntity));
+                    qtd_disconnect(__nativeId, signature, signalId, cast(bool)(__flags & QtdObjectFlags.hasDId));
                     break;
                 default:
                     assert (false);
             }
         }
-    }
-    
-    ~this()
-    {
-        if (__prev)
-            __prev.__next = __next;
-        else
-            __root = __next;
-        
-        if (__next)      
-            __next.__prev = __prev;        
     }
     
     /**
@@ -153,7 +135,7 @@ class QObject___ extends QObject {
         
         find(children);
         return result;
-    }
+    }  
 }// class
 
 abstract class QAbstractItemModel___ extends QAbstractItemModel {
