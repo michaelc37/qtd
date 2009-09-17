@@ -1326,11 +1326,6 @@ bool AbstractMetaClass::hasConstructors() const
     return queryFunctions(Constructors).size() != 0;
 }
 
-bool AbstractMetaClass::isPolymorphic()
-{
-    return typeEntry()->isObject() && m_has_virtual_destructor;
-}
-
 void AbstractMetaClass::addDefaultConstructor()
 {
     AbstractMetaFunction *f = new AbstractMetaFunction;

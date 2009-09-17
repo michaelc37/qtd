@@ -44,6 +44,7 @@
 #include <QtCore/QDir>
 
 #include <qdebug.h>
+#include <iostream>
 
 QString CppHeaderGenerator::fileNameForClass(const AbstractMetaClass *java_class) const
 {
@@ -175,12 +176,19 @@ void CppHeaderGenerator::write(QTextStream &s, const AbstractMetaClass *java_cla
         priGenerator->addHeader(java_class->package(), fileNameForClass(java_class));
         return ;
     }
+    
+    if (java_class->name() == "QFSFileEngine")
+    {
+        std::cout << java_class->typeEntry()->isObject() << std::endl;
+        std::cout << java_class->hasVirtualDestructor() << std::endl;
+        qFatal("Bo");
+    }
 
     s << "class " << shellClassName(java_class)
       << " : public " << java_class->qualifiedCppName();
     if (java_class->isQObject())
         s << ", public QtD_QObjectEntity";
-    else if (java_class->hasVirtualFunctions())
+    else if (java_class->hasVirtualDestructor())
         s << ", public QtD_Entity";
     s << endl  << "{" << endl;
 
@@ -208,7 +216,7 @@ void CppHeaderGenerator::write(QTextStream &s, const AbstractMetaClass *java_cla
             writeFunction(s, function);
     }
     
-    if (java_class->hasVirtualFunctions())
+    if (java_class->typeEntry()->isObject() && java_class->hasVirtualDestructor())
         s << "    ~" << shellClassName(java_class) << "();" << endl << endl;
     
 

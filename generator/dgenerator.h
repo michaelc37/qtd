@@ -138,12 +138,6 @@ public:
 
     void writeShellVirtualFunction(QTextStream &s, const AbstractMetaFunction *function,
                                           const AbstractMetaClass *implementor, int id);
-                                          
-    enum MarshalFlags
-    {        
-        MarhsalScope    = 0x1
-    }
-    
     void marshalToD(QTextStream &s, const ComplexTypeEntry* ctype);
 
 private:

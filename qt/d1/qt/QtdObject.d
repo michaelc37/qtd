@@ -273,7 +273,7 @@ abstract class QtdObject : QtdObjectBase
     {
         debug(QtdVerbose) __print("In QtdObject destructor");
         
-        if (__prev || __root is this)
+        if (__prev || __root is this)d
             __unpin;
     }    
 }

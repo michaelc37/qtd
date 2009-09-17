@@ -886,6 +886,10 @@ public:
 
     bool hasVirtualFunctions() const { return m_hasVirtualFunctions; }
     void setHasVirtualFunctions(bool value) { m_hasVirtualFunctions = value; }
+    
+    bool hasVirtualDestructor() const { return m_hasVirtualDestructor; }
+    void setHasVirtualDestructor(bool value) { m_hasVirtualDestructor = value; }
+
 
     void setDepends(const QStringList &depends) {m_depends = depends; }
     const QStringList &depends() {return m_depends; }
@@ -920,6 +924,7 @@ private:
     bool m_isStructInD;
     bool m_isAbstract;
     bool m_hasVirtualFunctions;
+    bool m_hasVirtualDestructor;
     QStringList m_depends;
 };
 

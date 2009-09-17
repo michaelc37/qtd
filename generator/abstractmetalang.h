@@ -854,8 +854,6 @@ public:
 
     void setTypeAlias(bool typeAlias) { m_is_type_alias = typeAlias; }
     bool isTypeAlias() const { return m_is_type_alias; }
-    
-    bool isPolymorphic();
 
     const QStringList &depends() { return m_type_entry->depends(); }
 

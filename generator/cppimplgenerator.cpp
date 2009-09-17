@@ -601,7 +601,7 @@ void CppImplGenerator::write(QTextStream &s, const AbstractMetaClass *java_class
                 writeShellConstructor(s, function);
         }
         
-        if (java_class->typeEntry()->isObject())
+        if (java_class->hasVirtualDestructor())
             writeShellDestructor(s, java_class);
 
         if (java_class->isQObject())
@@ -1391,7 +1391,7 @@ void CppImplGenerator::writeShellConstructor(QTextStream &s, const AbstractMetaF
     
     if (cls->isQObject())
         s << "," << endl << "      QtD_QObjectEntity(this, d_ptr)";
-    else if (cls->typeEntry()->isObject() && cls->hasVirtualFunctions())
+    else if (cls->hasVirtualDestructor())
         s << "," << endl << "      QtD_Entity(d_ptr)";
 /* qtd        s << "    m_meta_object(0)," << endl;
     s << "      m_vtable(0)," << endl
@@ -1736,16 +1736,16 @@ void CppImplGenerator::writePublicFunctionOverride(QTextStream &s,
 
 void CppImplGenerator::writeObjectFunctions(QTextStream &s, const AbstractMetaClass *java_class)
 {
-    s << "extern \"C\" DLL_PUBLIC const void* qtd_" << java_class->name() << "_staticTypeId()" << endl;
-    s << "{" << endl;
+    if (java_class->hasVirtualDestructor())
     {
-        Indentation indent(INDENT);
-            s << INDENT << "return &typeid(" << java_class->qualifiedCppName() << ");" << endl;
-    }
-    s << "}" << endl << endl;
+        s << "extern \"C\" DLL_PUBLIC const void* qtd_" << java_class->name() << "_staticTypeId()" << endl;
+        s << "{" << endl;
+        {
+            Indentation indent(INDENT);
+                s << INDENT << "return &typeid(" << java_class->qualifiedCppName() << ");" << endl;
+        }
+        s << "}" << endl << endl;
         
-    if (java_class->hasVirtualFunctions())
-    {
         if (!java_class->baseClass())
         {      
             s << "extern \"C\" DLL_PUBLIC void* qtd_" << java_class->name() << "_dId(void *q_ptr)" << endl;
@@ -1767,9 +1767,7 @@ void CppImplGenerator::writeObjectFunctions(QTextStream &s, const AbstractMetaCl
                     s << INDENT << "return &typeid((" << java_class->qualifiedCppName() << "*)nativeId);" << endl;
             }
             s << "}" << endl << endl;
-        }
-        else
-            s << "extern \"C\" DLL_PUBLIC void* qtd_" << java_class->rootClass()->name() << "_dId(void *q_ptr);" << endl;            
+        }       
     }
 }
 
