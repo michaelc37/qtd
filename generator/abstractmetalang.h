@@ -786,8 +786,10 @@ public:
 
     bool hasVirtualSlots() const { return m_has_virtual_slots; }       
     bool hasVirtualFunctions() const { return !isFinal() && m_has_virtuals; }
-    bool hasVirtualDestructor() const { return m_has_virtual_destructor; }
+    bool hasVirtualDestructor() const { return m_has_virtual_destructor
+        || (m_base_class && m_base_class->hasVirtualDestructor()); }
     bool setHasVirtualDestructor(bool value) { m_has_virtual_destructor = value; }
+    bool isPolymorphic() const { return hasVirtualFunctions() || hasVirtualDestructor(); }
     bool hasProtectedFunctions() const;
 
     QList<TypeEntry *> templateArguments() const { return m_template_args; }

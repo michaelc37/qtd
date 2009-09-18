@@ -99,9 +99,14 @@ class MetaObject
 }
 
 
-abstract class QtdMetaObject : MetaObject
+abstract class QtdMetaObjectBase : MetaObject
 {
     QtdObjectBase function(void* nativeId, QtdObjectFlags flags) _createWrapper;
+    
+    this(QtdMetaObjectBase base)
+    {
+        super(base);
+    }
     
     void construct(T : QtdObject, Concrete = T)()
     {
@@ -113,7 +118,7 @@ abstract class QtdMetaObject : MetaObject
 /++
     Meta-object for polymorphic Qt classes.
 +/
-final class QtdMetaObject : MetaObject
+final class QtdMetaObject : QtdMetaObjectBase
 {
     alias typeof(this) This;
     
@@ -143,7 +148,7 @@ final class QtdMetaObject : MetaObject
             }
         }
         
-        return _createWrapper(nativeId, flags);
+        return static_cast!(QtdObject)(_createWrapper(nativeId, flags));
     }
 }
 
@@ -273,7 +278,7 @@ abstract class QtdObject : QtdObjectBase
     {
         debug(QtdVerbose) __print("In QtdObject destructor");
         
-        if (__prev || __root is this)d
+        if (__prev || __root is this)
             __unpin;
     }    
 }

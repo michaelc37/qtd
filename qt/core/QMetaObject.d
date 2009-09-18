@@ -7,7 +7,7 @@ import qt.QtdObject;
 /++
     Meta-object for QObject classes.
 +/
-final class QMetaObject : MetaObject
+final class QMetaObject : QtdMetaObjectBase
 {
     alias typeof(this) This;
     
@@ -57,7 +57,7 @@ final class QMetaObject : MetaObject
             {
                 auto moId = qtd_QObject_metaObject(nativeObjId);
                 if (_nativeId == moId)
-                     result = _createWrapper(nativeObjId, flags);
+                     result =  static_cast!(QObject)(_createWrapper(nativeObjId, flags));
                 else
                 {
                     // get native metaobjects for the entire derivation lattice
@@ -81,7 +81,8 @@ final class QMetaObject : MetaObject
                     while (moCount > 0)
                         moIds[--moCount] = moId = qtd_QMetaObject_superClass(moId);
                                     
-                    result = lookupDerived(moIds)._createWrapper(nativeObjId, flags);
+                    auto mo = lookupDerived(moIds);
+                    result = static_cast!(QObject)(mo._createWrapper(nativeObjId, flags));
                 }                
             }
         }

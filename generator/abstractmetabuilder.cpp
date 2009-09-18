@@ -1312,18 +1312,8 @@ void AbstractMetaBuilder::traverseFunctions(ScopeModelItem scope_item, AbstractM
                 meta_class->setHasNonPrivateConstructor(true);
             }
 
-            if (meta_function->isDestructor())
-            {
-                if (meta_class->name() == "QFSFileEngine")
-                {
-                    std::cout << meta_function->isFinal() << std::endl;
-                    std::cout << qPrintable(meta_function->name()) << std::endl;
-                    qFatal("Gop");
-                }
-               
-                if (!meta_function->isFinal())
-                    meta_class->setHasVirtualDestructor(true);            
-            }
+            if (meta_function->isDestructor() && !meta_function->isFinal())
+                    meta_class->setHasVirtualDestructor(true);
 
             if (!meta_function->isDestructor()
                 && !meta_function->isInvalid()

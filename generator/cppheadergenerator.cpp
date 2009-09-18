@@ -176,19 +176,12 @@ void CppHeaderGenerator::write(QTextStream &s, const AbstractMetaClass *java_cla
         priGenerator->addHeader(java_class->package(), fileNameForClass(java_class));
         return ;
     }
-    
-    if (java_class->name() == "QFSFileEngine")
-    {
-        std::cout << java_class->typeEntry()->isObject() << std::endl;
-        std::cout << java_class->hasVirtualDestructor() << std::endl;
-        qFatal("Bo");
-    }
 
     s << "class " << shellClassName(java_class)
       << " : public " << java_class->qualifiedCppName();
     if (java_class->isQObject())
         s << ", public QtD_QObjectEntity";
-    else if (java_class->hasVirtualDestructor())
+    else if (java_class->isPolymorphic())
         s << ", public QtD_Entity";
     s << endl  << "{" << endl;
 
@@ -216,10 +209,9 @@ void CppHeaderGenerator::write(QTextStream &s, const AbstractMetaClass *java_cla
             writeFunction(s, function);
     }
     
-    if (java_class->typeEntry()->isObject() && java_class->hasVirtualDestructor())
-        s << "    ~" << shellClassName(java_class) << "();" << endl << endl;
+    if (java_class->isPolymorphic())
+        s << "    ~" << shellClassName(java_class) << "();" << endl << endl;    
     
-
     // All functions in original class that should be reimplemented in shell class
     AbstractMetaFunctionList shell_functions = java_class->functionsInShellClass();
     foreach (const AbstractMetaFunction *function, shell_functions) {
@@ -255,8 +247,12 @@ void CppHeaderGenerator::write(QTextStream &s, const AbstractMetaClass *java_cla
 */
     writeInjectedCode(s, java_class);
 
-    s  << "};" << endl << endl
-       << "#endif // " << include_block << endl;
+    s  << "};" << endl << endl;
+    
+    if (!java_class->isQObject() && java_class->isPolymorphic() && java_class->baseClass())
+        s << "extern \"C\" DLL_PUBLIC void* qtd_" << java_class->rootClass()->name() << "_dId(void *nativeId);" << endl;
+   
+    s << "#endif // " << include_block << endl;
 
     priGenerator->addHeader(java_class->package(), fileNameForClass(java_class));
     priGenerator->addClass(java_class->package(), java_class->name());

@@ -757,7 +757,8 @@ public:
           m_generic_class(false),
           m_type_flags(0),
           m_isStructInD(false),
-          m_isAbstract(false)
+          m_isAbstract(false),          
+          m_isPolymorphic(false)
     {
         Include inc;
         inc.name = "QVariant";
@@ -884,11 +885,8 @@ public:
     bool isAbstract() const { return m_isAbstract; }
     void setAbstract(bool isAbstract) { m_isAbstract = isAbstract; }
 
-    bool hasVirtualFunctions() const { return m_hasVirtualFunctions; }
-    void setHasVirtualFunctions(bool value) { m_hasVirtualFunctions = value; }
-    
-    bool hasVirtualDestructor() const { return m_hasVirtualDestructor; }
-    void setHasVirtualDestructor(bool value) { m_hasVirtualDestructor = value; }
+    bool isPolymorphic() const { return m_isPolymorphic; }
+    void setIsPolymorphic(bool value) { m_isPolymorphic = value; }
 
 
     void setDepends(const QStringList &depends) {m_depends = depends; }
@@ -914,7 +912,7 @@ private:
     uint m_polymorphic_base : 1;
     uint m_generic_class : 1;
 
-    QString m_polymorphic_id_value;
+    QString m_polymorphic_id_value;e
     QString m_lookup_name;
     QString m_target_type;
     ExpensePolicy m_expense_policy;
@@ -923,8 +921,7 @@ private:
     // qtd
     bool m_isStructInD;
     bool m_isAbstract;
-    bool m_hasVirtualFunctions;
-    bool m_hasVirtualDestructor;
+    bool m_isPolymorphic;
     QStringList m_depends;
 };
 

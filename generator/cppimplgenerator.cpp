@@ -601,7 +601,7 @@ void CppImplGenerator::write(QTextStream &s, const AbstractMetaClass *java_class
                 writeShellConstructor(s, function);
         }
         
-        if (java_class->hasVirtualDestructor())
+        if (java_class->isPolymorphic())
             writeShellDestructor(s, java_class);
 
         if (java_class->isQObject())
@@ -1391,7 +1391,7 @@ void CppImplGenerator::writeShellConstructor(QTextStream &s, const AbstractMetaF
     
     if (cls->isQObject())
         s << "," << endl << "      QtD_QObjectEntity(this, d_ptr)";
-    else if (cls->hasVirtualDestructor())
+    else if (cls->isPolymorphic())
         s << "," << endl << "      QtD_Entity(d_ptr)";
 /* qtd        s << "    m_meta_object(0)," << endl;
     s << "      m_vtable(0)," << endl
@@ -1736,7 +1736,7 @@ void CppImplGenerator::writePublicFunctionOverride(QTextStream &s,
 
 void CppImplGenerator::writeObjectFunctions(QTextStream &s, const AbstractMetaClass *java_class)
 {
-    if (java_class->hasVirtualDestructor())
+    if (java_class->isPolymorphic())
     {
         s << "extern \"C\" DLL_PUBLIC const void* qtd_" << java_class->name() << "_staticTypeId()" << endl;
         s << "{" << endl;
@@ -1747,26 +1747,17 @@ void CppImplGenerator::writeObjectFunctions(QTextStream &s, const AbstractMetaCl
         s << "}" << endl << endl;
         
         if (!java_class->baseClass())
-        {      
-            s << "extern \"C\" DLL_PUBLIC void* qtd_" << java_class->name() << "_dId(void *q_ptr)" << endl;
-            s << "{" << endl;
-            {
-                Indentation indent(INDENT);
-                    s << INDENT << "QtD_Entity* a = dynamic_cast<QtD_Entity*>((" << java_class->qualifiedCppName() << "*)q_ptr);" << endl
-                    << INDENT << "if (a != NULL)" << endl
-                    << INDENT << "    return a->dId;" << endl
-                    << INDENT << "else" << endl
-                    << INDENT << "    return NULL;" << endl;
-            }
-            s << "}" << endl << endl;
+        {
+            s << "extern \"C\" DLL_PUBLIC void* qtd_" << java_class->name() << "_dId(void *nativeId)" << endl
+              << "{" << endl
+              << "    QtD_Entity *a = dynamic_cast<QtD_Entity*>((" << java_class->qualifiedCppName() << "*)nativeId);" << endl
+              << "    return a ? a->dId : NULL;" << endl
+              << "}" << endl << endl
             
-            s << "extern \"C\" DLL_PUBLIC const void* qtd_" << java_class->name() << "_typeId(void *nativeId)" << endl;
-            s << "{" << endl;
-            {
-                Indentation indent(INDENT);
-                    s << INDENT << "return &typeid((" << java_class->qualifiedCppName() << "*)nativeId);" << endl;
-            }
-            s << "}" << endl << endl;
+              << "extern \"C\" DLL_PUBLIC const void* qtd_" << java_class->name() << "_typeId(void *nativeId)" << endl
+              << "{" << endl
+              << "    return &typeid((" << java_class->qualifiedCppName() << "*)nativeId);" << endl
+              << "}" << endl << endl;
         }       
     }
 }
@@ -1892,7 +1883,7 @@ void CppImplGenerator::writeFinalFunctionArguments(QTextStream &s, const Abstrac
     const AbstractMetaClass *cls = java_function->ownerClass();
           
     if (java_function->isConstructor() &&
-        cls->typeEntry()->isObject())
+        cls->isPolymorphic())
     {
         s << "void *d_ptr";
         nativeArgCount++;
@@ -3540,7 +3531,7 @@ void CppImplGenerator::writeFunctionCallArguments(QTextStream &s,
 
     int written_arguments = 0;
     const AbstractMetaClass *cls = java_function->ownerClass();
-    if (java_function->isConstructor() && cls->typeEntry()->isObject()) {
+    if (java_function->isConstructor() && cls->isPolymorphic()) {
         s << "d_ptr";
         written_arguments++;
     }

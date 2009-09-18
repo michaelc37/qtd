@@ -54,7 +54,7 @@ final class StackAlloc
  
 version (D_Version2)
 {
-    void StackAlloc __stackAlloc()
+    StackAlloc __stackAlloc()
     {
         static StackAlloc instance; // thread-local instance
         // COMPILER BUG: No thread-local static constructors, Using lazy construction
@@ -77,7 +77,7 @@ else
         auto res = stackAllocInst.val;
         if (!res)
         {
-            res = new This(stackSize);
+            res = new StackAlloc(stackSize);
             stackAllocInst.val = res;
         }
         return res;

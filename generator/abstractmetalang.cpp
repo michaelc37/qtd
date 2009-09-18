@@ -1111,9 +1111,7 @@ void AbstractMetaClass::addFunction(AbstractMetaFunction *function)
         m_functions << function;
         qSort(m_functions.begin(), m_functions.end(), function_sorter);
     }
-    else
-        qFatal("blah");
-
+    
     m_has_virtual_slots |= function->isVirtualSlot();
     m_has_virtuals |= !function->isFinal() || function->isVirtualSlot();
     m_has_nonpublic |= !function->isPublic();

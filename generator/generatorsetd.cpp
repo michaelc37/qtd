@@ -217,6 +217,26 @@ QString GeneratorSetD::generate() {
 
     generators << cointainerGenerator;
     contexts << "cointainerGenerator";
+    
+    // qtd
+    // code for including classses in 1 module for avoiding circular imports
+    foreach (AbstractMetaClass *cls, builder.classes()) {
+       ComplexTypeEntry *ctype = const_cast<ComplexTypeEntry*>(cls->typeEntry());
+
+        if (!cls->isInterface() && cls->isAbstract())
+            ctype->setAbstract(true);
+        
+        ctype->setIsPolymorphic(cls->isPolymorphic());
+        
+
+        foreach(QString child, ctype->includedClasses) {
+            ComplexTypeEntry *ctype_child = TypeDatabase::instance()->findComplexType(child);
+            ctype_child->addedTo = cls->name();
+        }
+
+        foreach (AbstractMetaFunction *function, cls->functions())
+            function->checkStoreResult();
+    }
 
     for (int i=0; i<generators.size(); ++i) {
         Generator *generator = generators.at(i);
