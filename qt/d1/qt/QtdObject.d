@@ -22,14 +22,15 @@ enum QtdObjectFlags : ubyte
 {
     none,
     // The native object will not be deleted when the wrapper is deleted
-    skipNativeDelete          = 0b0001,
-    skipDDelete               = 0b0010,
-    hasDId                    = 0b0100,
-    stackAllocated            = 0b1000
-    /+
-    // The will be deleted when is goes out of scope. Implies skipNativeDelete
-    scoped                    = 0x08
-    +/
+    skipNativeDelete          = 0b0_0001,
+    // The wrapper will not be deleted when the native object is deleted
+    skipDDelete               = 0b0_0010,
+    // D object reference is stored in the shell
+    hasDId                    = 0b0_0100,
+    // The wrapper is allocated on thread-local stack and destroyed at the end of the scope
+    stackAllocated            = 0b0_1000
+    // It is a QObject
+    isQObject                 = 0b1_0000
 }
 
 class MetaObject
@@ -39,7 +40,7 @@ class MetaObject
     private
     {
         MetaObject _base;
-        ClassInfo _classInfo;         
+        ClassInfo _classInfo;
     }
     
     //COMPILER BUG: not accessible from QMetaObject
@@ -108,16 +109,14 @@ abstract class QtdMetaObjectBase : MetaObject
         super(base);
     }
     
-    void construct(T : QtdObject, Concrete = T)()
+    void construct(T : QtdObject)()
     {
         super.construct!(T);
         _createWrapper = &T.__createWrapper;
     }
 }
 
-/++
-    Meta-object for polymorphic Qt classes.
-+/
+
 final class QtdMetaObject : QtdMetaObjectBase
 {
     alias typeof(this) This;
@@ -152,13 +151,39 @@ final class QtdMetaObject : QtdMetaObjectBase
     }
 }
 
-abstract class QtdObjectBase
+class IdMappings
 {
+    private void* _data;
+    
+    this()
+    {
+    }
+
+    void add(void* nativeId, void* dId)
+    {
+    }
+    
+    void remove(void* dId)
+    {
+    }
+    
+    void* opIndex[void* nativeId]
+    {
+    }
+    
+    ~this()
+    {
+        free(_data);
+    }
+}
+
+abstract class QtdObjectBase
+{    
     alias typeof(this) This;
     
     void* __nativeId;
     QtdObjectFlags __flags;
-    
+        
     new (size_t size, QtdObjectFlags flags = QtdObjectFlags.none)
     {
         return flags & QtdObjectFlags.stackAllocated ? __stackAlloc.alloc(size) :
@@ -177,6 +202,7 @@ abstract class QtdObjectBase
     {
         __nativeId = nativeId;
         __flags = flags;
+                
         debug(QtdVerbose) __print("D wrapper constructed");
     }
     
@@ -201,10 +227,11 @@ abstract class QtdObjectBase
         
         if (!(__flags & QtdObjectFlags.skipNativeDelete))
         {
+            // Avoid deleting the wrapper twice
             __flags |= QtdObjectFlags.skipDDelete;
             debug(QtdVerbose) __print("About to call native delete");
             __deleteNative;
-        }     
+        }
     }
 }
 
@@ -214,81 +241,73 @@ abstract class QtdObject : QtdObjectBase
     private
     {
         typeof(this) __next, __prev;
+        ubyte __nativeRef_;
         static typeof(this) __root;
-    }
-    
-    /++
-        Use this method instead of 'is' operator to check if two D objects
-        wrap the same native object.
-    +/
-    bool isSame(QtdObject other)
-    {
-        return __nativeId == other.__nativeId;
     }
        
     mixin SignalHandlerOps;
 
     this(void* nativeId, QtdObjectFlags flags)
     {
-        super (nativeId, flags);       
-        if (!(flags & QtdObjectFlags.skipNativeDelete))
-            __pin;
-    }
-    
-    final void __pin()
-    {
-        debug(QtdVerbose) __print("Pinning");
+        super (nativeId, flags);
         
-        __next = __root;
-        __root = this;
-        if (__next)
-            __next.__prev = this;        
+        if (!(flags & QtdObjectFlags.isQObject) && !(flags & QtdObjectFlags.hasDId))
+            __addIdMapping;
     }
     
-    final void __unpin()
+    void __addIdMapping() {}
+    void __removeIdMapping() {}
+    
+    final void __nativeRef()
     {
-        debug(QtdVerbose) __print("Unpinning");
-                
-        if (__prev)
-            __prev.__next = __next;
-        else
-            __root = __next;
+        assert (__nativeRef_ < 255);
         
-        if (__next)      
-            __next.__prev = __prev;
+        if (!__nativeRef_)
+        {
+            __next = __root;
+            __root = this;
+            if (__next)
+                __next.__prev = this;        
+        }
+        __nativeRef_++;
+        
+        debug(QtdVerbose) __print("Native ref incremented");
     }
     
-    void __nativeOwnership(bool value)
-    {       
-        if (value)
+    final void __nativeDeref()
+    {
+        assert (__nativeRef > 0);
+        __nativeRef_--;
+               
+        if (!__nativeRef_)
         {
-            assert (!(__flags & QtdObjectFlags.skipNativeDelete));            
-            __flags |= QtdObjectFlags.skipNativeDelete;
-            __unpin;
+            if (__prev)
+                __prev.__next = __next;
+            else
+                __root = __next;
+            
+            if (__next)      
+                __next.__prev = __prev;
         }
-        else
-        {
-            assert (__flags & QtdObjectFlags.skipNativeDelete);            
-            __flags = __flags &= ~QtdObjectFlags.skipNativeDelete;
-            __pin;
-        }
+        
+        debug(QtdVerbose) __print("Native ref decremented");
     }
-      
+    
     ~this()
     {
-        debug(QtdVerbose) __print("In QtdObject destructor");
+        if (!(__flags & QtdObjectFlags.isQObject) && !(__flags & QtdObjectFlags.hasDId))
+            __removeMapping;
         
-        if (__prev || __root is this)
-            __unpin;
-    }    
-}
-
-/++
-+/
-void dispose(QtdObjectBase obj)
-{
-    obj.__flags &= ~QtdObjectFlags.skipNativeDelete;
-    delete obj;
+        if (__nativeRef_)
+        {
+            if (__nativeRef_ > 1)
+            {
+                debug(QtdVerbose) __print("Native ref is greater then 1 when deleting the object");
+                __nativeRef_ = 1;
+            }
+            __nativeDeref;
+        }
+    }
 }
 
 // Called from shell destructors
@@ -304,3 +323,15 @@ extern(C) void qtd_delete_d_object(void* dId)
         delete obj;
     }
 }
+
+extern(C) void qtd_native_ref(void* dId)
+{
+    (cast(QtdObject)dId).__nativeRef;
+}
+
+extern(C) void qtd_native_deref(void* dId)
+{
+    (cast(QtdObject)dId).__nativeDeref;
+}
+
+
