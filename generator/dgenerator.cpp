@@ -480,7 +480,7 @@ static QString function_call_for_ownership(TypeSystem::Ownership owner)
 {
     if (owner == TypeSystem::CppOwnership) {
         return "__pin";
-    } else if (owner == TypeSystem::TargetLangOwnership || owner == TypeSystem::TargetLangOwnership) {
+    } else if (owner == TypeSystem::TargetLangOwnership || owner == TypeSystem::DefaultOwnership) {
         return "__unpin";
     } else {
         Q_ASSERT(false);
