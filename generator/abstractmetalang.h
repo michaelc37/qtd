@@ -785,11 +785,11 @@ public:
     bool generateShellClass() const;
 
     bool hasVirtualSlots() const { return m_has_virtual_slots; }       
-    bool hasVirtualFunctions() const { return !isFinal() && m_has_virtuals; }
+    bool hasVirtualFunctions() const { return !isFinal() && (m_has_virtuals || hasVirtualDestructor()); }
     bool hasVirtualDestructor() const { return m_has_virtual_destructor
         || (m_base_class && m_base_class->hasVirtualDestructor()); }
     bool setHasVirtualDestructor(bool value) { m_has_virtual_destructor = value; }
-    bool isPolymorphic() const { return hasVirtualFunctions() || hasVirtualDestructor(); }
+    bool isPolymorphic() const { return typeEntry()->isObject() && (hasVirtualFunctions() || hasVirtualDestructor()); }
     bool hasProtectedFunctions() const;
 
     QList<TypeEntry *> templateArguments() const { return m_template_args; }

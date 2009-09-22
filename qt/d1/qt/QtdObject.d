@@ -151,6 +151,7 @@ final class QtdMetaObject : QtdMetaObjectBase
     }
 }
 
+/*
 class IdMappings
 {
     private void* _data;
@@ -176,12 +177,26 @@ class IdMappings
         free(_data);
     }
 }
+*/
 
 abstract class QtdObjectBase
-{    
+{
+}
+
+// Base class for by-reference objects
+abstract class QtdObject
+{   
     alias typeof(this) This;
     
+    private
+    {
+        typeof(this) __next, __prev;        
+        static typeof(this) __root;
+    } 
+    
+    /// Internal members. Do not change
     void* __nativeId;
+    /// ditto
     QtdObjectFlags __flags;
         
     new (size_t size, QtdObjectFlags flags = QtdObjectFlags.none)
@@ -198,12 +213,19 @@ abstract class QtdObjectBase
             GC.free(p);
     }
     
-    this(void* nativeId, QtdObjectFlags flags = QtdObjectFlags.none)
+       
+    mixin SignalHandlerOps;
+
+    this(void* nativeId, QtdObjectFlags flags)
     {
         __nativeId = nativeId;
         __flags = flags;
-                
-        debug(QtdVerbose) __print("D wrapper constructed");
+        
+        debug(QtdVerbose) __print("D wrapper constructed");       
+        /*
+        if (!(flags & QtdObjectFlags.isQObject) && !(flags & QtdObjectFlags.hasDId))
+            __addIdMapping;
+        */
     }
     
     debug(QtdVerbose)
@@ -221,9 +243,48 @@ abstract class QtdObjectBase
             ~ " because it has no public destructor");
     }
     
+    /*
+    void __addIdMapping() {}
+    void __removeIdMapping() {}
+    */
+    
+    final void __pin()
+    {
+        assert (!__prev && !__root is this);
+        __next = __root;
+        __root = this;
+        if (__next)
+            __next.__prev = this;        
+    
+        debug(QtdVerbose) __print("Wrapper GC disabled");
+    }
+    
+    final void __unpin()
+    {
+        assert (__prev || __root is this);
+               
+        if (__prev)
+        {
+            __prev.__next = __next;
+            __prev = null;
+        }
+        else
+            __root = __next;
+        
+        if (__next)      
+            __next.__prev = __prev;
+        
+        debug(QtdVerbose) __print("Wrapper GC reenabled");
+    }
+    
     ~this()
     {
-        debug(QtdVerbose) __print("In QtdObjectBase destructor");
+        /*
+        if (!(__flags & QtdObjectFlags.isQObject) && !(__flags & QtdObjectFlags.hasDId))
+            __removeMapping;
+        */
+        
+        debug(QtdVerbose) __print("In QtdObject destructor");
         
         if (!(__flags & QtdObjectFlags.skipNativeDelete))
         {
@@ -232,81 +293,9 @@ abstract class QtdObjectBase
             debug(QtdVerbose) __print("About to call native delete");
             __deleteNative;
         }
-    }
-}
-
-// Base class for by-reference objects
-abstract class QtdObject : QtdObjectBase
-{        
-    private
-    {
-        typeof(this) __next, __prev;
-        ubyte __nativeRef_;
-        static typeof(this) __root;
-    }
-       
-    mixin SignalHandlerOps;
-
-    this(void* nativeId, QtdObjectFlags flags)
-    {
-        super (nativeId, flags);
         
-        if (!(flags & QtdObjectFlags.isQObject) && !(flags & QtdObjectFlags.hasDId))
-            __addIdMapping;
-    }
-    
-    void __addIdMapping() {}
-    void __removeIdMapping() {}
-    
-    final void __nativeRef()
-    {
-        assert (__nativeRef_ < 255);
-        
-        if (!__nativeRef_)
-        {
-            __next = __root;
-            __root = this;
-            if (__next)
-                __next.__prev = this;        
-        }
-        __nativeRef_++;
-        
-        debug(QtdVerbose) __print("Native ref incremented");
-    }
-    
-    final void __nativeDeref()
-    {
-        assert (__nativeRef > 0);
-        __nativeRef_--;
-               
-        if (!__nativeRef_)
-        {
-            if (__prev)
-                __prev.__next = __next;
-            else
-                __root = __next;
-            
-            if (__next)      
-                __next.__prev = __prev;
-        }
-        
-        debug(QtdVerbose) __print("Native ref decremented");
-    }
-    
-    ~this()
-    {
-        if (!(__flags & QtdObjectFlags.isQObject) && !(__flags & QtdObjectFlags.hasDId))
-            __removeMapping;
-        
-        if (__nativeRef_)
-        {
-            if (__nativeRef_ > 1)
-            {
-                debug(QtdVerbose) __print("Native ref is greater then 1 when deleting the object");
-                __nativeRef_ = 1;
-            }
-            __nativeDeref;
-        }
+        if (__prev || __root is this)
+            __unpin;
     }
 }
 
@@ -324,14 +313,12 @@ extern(C) void qtd_delete_d_object(void* dId)
     }
 }
 
-extern(C) void qtd_native_ref(void* dId)
+extern(C) void qtd_pin(void* dId)
 {
-    (cast(QtdObject)dId).__nativeRef;
+    (cast(QtdObject)dId).__pin;
 }
 
-extern(C) void qtd_native_deref(void* dId)
+extern(C) void qtd_native_unpin(void* dId)
 {
-    (cast(QtdObject)dId).__nativeDeref;
+    (cast(QtdObject)dId).__unpin;
 }
-
-

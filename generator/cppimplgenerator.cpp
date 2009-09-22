@@ -601,7 +601,7 @@ void CppImplGenerator::write(QTextStream &s, const AbstractMetaClass *java_class
                 writeShellConstructor(s, function);
         }
         
-        if (java_class->isPolymorphic())
+        if (java_class->hasVirtualFunctions())
             writeShellDestructor(s, java_class);
 
         if (java_class->isQObject())
@@ -1391,7 +1391,7 @@ void CppImplGenerator::writeShellConstructor(QTextStream &s, const AbstractMetaF
     
     if (cls->isQObject())
         s << "," << endl << "      QtD_QObjectEntity(this, d_ptr)";
-    else if (cls->isPolymorphic())
+    else if (cls->hasVirtualFunctions())
         s << "," << endl << "      QtD_Entity(d_ptr)";
 /* qtd        s << "    m_meta_object(0)," << endl;
     s << "      m_vtable(0)," << endl
@@ -1883,7 +1883,7 @@ void CppImplGenerator::writeFinalFunctionArguments(QTextStream &s, const Abstrac
     const AbstractMetaClass *cls = java_function->ownerClass();
           
     if (java_function->isConstructor() &&
-        cls->isPolymorphic())
+        cls->hasVirtualFunctions())
     {
         s << "void *d_ptr";
         nativeArgCount++;
@@ -3531,7 +3531,7 @@ void CppImplGenerator::writeFunctionCallArguments(QTextStream &s,
 
     int written_arguments = 0;
     const AbstractMetaClass *cls = java_function->ownerClass();
-    if (java_function->isConstructor() && cls->isPolymorphic()) {
+    if (java_function->isConstructor() && cls->hasVirtualFunctions()) {
         s << "d_ptr";
         written_arguments++;
     }
