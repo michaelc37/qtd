@@ -1,9 +1,9 @@
 module qt.core.QMetaObject;
 
 import
-	qt.Core,
+	qtd.Core,
 	qt.core.QObject,
-	qt.QtdObject;
+	qtd.QtdObject;
 
 /++
     Meta-object for QObject classes.

@@ -4,7 +4,7 @@ qt4_generate_moc(cpp/qt_gui/UrlHandler_shell.h
 	)
 set (cpp_files qt_gui/UrlHandler_shell )
 set (cpp_generated_files qt_gui/UrlHandler_shell_moc)
-#set (d_files gui/UrlHandler)
+#set (d_qt_files gui/UrlHandler)
 set(classes
     QPushButton
     QFileIconProvider

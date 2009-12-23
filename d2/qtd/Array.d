@@ -9,11 +9,11 @@
  *  (See accompanying file boost-license-1.0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
  *
  */
-module qt.Array;
+module qtd.Array;
 
 import
 	core.stdc.string,
-	qt.Memory;
+	qtd.Memory;
 
 void append(alias alloc = GCAlloc, T)(ref T[] array, T elem)
 {

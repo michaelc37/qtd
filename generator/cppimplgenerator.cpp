@@ -2944,7 +2944,7 @@ void CppImplGenerator::writeQtToJava(QTextStream &s,
                                      int argument_index,
                                      Option option)
 {
-    s << "writeQtToJava" << endl;
+    s << "// writeQtToJava" << endl;
 
     // Conversion to Java: Native code for return values, shell code for arguments
     TypeSystem::Language lang = argument_index == 0 ? TypeSystem::NativeCode : TypeSystem::ShellCode;

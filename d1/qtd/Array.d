@@ -9,7 +9,7 @@
  *  (See accompanying file boost-license-1.0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
  *
  */
-module qt.qtd.Array;
+module qtd.Array;
 
 version (Tango)
     import tango.stdc.string;

@@ -1,6 +1,6 @@
 module qt.QGlobal;
 
-public import qt.qtd.Str;
+public import qtd.String;
 public import qt.QDefines;
 
 version (D_Version2)

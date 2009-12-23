@@ -1905,13 +1905,13 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
 
     if (!m_isRecursive) {
         s << "public import qt.QGlobal;" << endl
-          << "public import qt.core.Qt;" << endl
-          << "public import qt.QtdObject;" << endl
-          << "private import qt.core.QString;" << endl
-          << "private import qt.Array;" << endl;
+          << "public import qt.core.Qt;" << endl          
+          << "public import qtd.QtdObject;" << endl
+          << "import qt.core.QString;" << endl
+          << "import qtd.Array;" << endl;
         if (d_class->isQObject()) {
             s << "public import qt.core.QMetaObject;" << endl;
-            s << "public import qt.Signal;" << endl;
+            s << "public import qtd.Signal;" << endl;
             if (d_class->name() != "QObject")
                 s << "public import qt.core.QObject;" << endl;
         }
@@ -1940,7 +1940,7 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
               << "import std.string;" << endl
               << "import std.utf;" << endl
               << "import core.memory;" << endl
-              << "import qt.Core;" << endl;
+              << "import qtd.Core;" << endl;
         }
         else
         {

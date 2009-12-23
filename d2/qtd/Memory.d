@@ -1,4 +1,4 @@
-module qt.Memory;
+module qtd.Memory;
 
 import
 	core.exception,

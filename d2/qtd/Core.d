@@ -1,4 +1,4 @@
-module qt.Core;
+module qtd.Core;
 
 /**
 	Casts from to type $(D_PARAM U), bypassing dynamic checks.

@@ -9,11 +9,11 @@
  *  (See accompanying file boost-license-1.0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
  *
  */
-module qt.Signal;
+module qtd.Signal;
 
 import
 	qt.QGlobal,
-	qt.Memory;
+	qtd.Memory;
 public import std.metastrings;
 
 import core.stdc.stdlib : crealloc = realloc, cfree = free;

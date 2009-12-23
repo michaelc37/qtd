@@ -10,7 +10,7 @@
 * 
 */
 
-module qt.QtdObject;
+module qtd.QtdObject;
 
 import qt.Signal;
 import tango.core.Memory;

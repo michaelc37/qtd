@@ -1,4 +1,4 @@
-configure_file(qt/QDefines.d.inc qt/QDefines.d)
+configure_file(d${D_VERSION}/qt/QDefines.d.inc qt/QDefines.d)
 
 ## Module specific cpp files.
 set (cpp_files qt_qtd/qtd_core qt_qtd/ArrayOpsPrimitive_shell
@@ -10,26 +10,36 @@ set (cpp_files qt_qtd/qtd_core qt_qtd/ArrayOpsPrimitive_shell
     qt_core/QModelIndex_shell qt_core/QMetaType_shell
     qt_core/QMetaObject_shell)
 ## Module specific d files.
-set (d_files    
-    qtd/ArrayOpsPrimitive   
-    qtd/Traits
+set (d_qt_files
+    QGlobal
     core/QString
     core/QMetaType
-    core/QMetaObject)
-set (d_version_files
+    core/QMetaObject
+    core/QLine
+    core/QLineF
+    core/QModelIndex
+    core/QRect
+    core/QRectF
+    core/QSize
+    core/QSizeF
+    core/QPoint
+    core/QPointF
+    core/QVariant
+    )
+
+set (d_qtd_files   
     Core
     Memory
-    Array    
+    Array 
+    Signal
+    String
+    ArrayOpsPrimitive   
+    Traits
     QtdObject
-    QGlobal
-    Signal qtd/Str
-    core/QLine core/QLineF
-    core/QModelIndex
-    core/QRect core/QRectF
-    core/QSize core/QSizeF
-    core/QPoint core/QPointF
-    core/QVariant)
-set (d_generated_files core/Qt QDefines)
+    )
+
+set (d_generated_files qt/core/Qt qt/QDefines)
+
 ## Classes.
 set (classes 
     QChildEvent

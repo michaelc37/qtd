@@ -9,14 +9,14 @@
 *
 */
 
-module qt.QtdObject;
+module qtd.QtdObject;
 
 import
 	core.memory,
-	qt.Signal,
-	qt.Core,
-	qt.Memory,
-	qt.Array;
+	qtd.Signal,
+	qtd.Core,
+	qtd.Memory,
+	qtd.Array;
 
 struct ScopeObject(T : QtdObjectBase)
 {

@@ -9,7 +9,7 @@
 *
 */
 
-module qt.qtd.ArrayOpsPrimitive;
+module qtd.ArrayOpsPrimitive;
 
 import qt.QGlobal;
 
