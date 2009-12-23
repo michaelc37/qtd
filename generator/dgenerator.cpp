@@ -2461,7 +2461,7 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
 //        writeConversionFunction(s, d_class);
 
     if (d_class->hasConstructors() && d_class->polymorphicBase() == d_class)
-        s << "extern(C) void qtd_" << d_class->name() << "_destructor(void *ptr);" << endl << endl;
+        s << "extern(C) void qtd_" << d_class->name() << "_delete(void *ptr);" << endl << endl;
 
     // qtd
     s << endl << "// C wrappers" << endl;

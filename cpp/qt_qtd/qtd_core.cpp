@@ -11,17 +11,6 @@
 
 #include "qtd_core.h"
 #include <iostream>
-#include <QCryptographicHash>
-
-extern "C" DLL_PUBLIC void* qtd_test_Object()
-{
-    return new QCryptographicHash(QCryptographicHash::Md5);
-}
-
-extern "C" DLL_PUBLIC void qtd_test_delete_Object(void* obj)
-{
-    delete (QCryptographicHash*)obj;
-}
 
 extern "C" DLL_PUBLIC QModelIndex qtd_to_QModelIndex(QModelIndexAccessor mia)
 {

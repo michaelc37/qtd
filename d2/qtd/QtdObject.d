@@ -290,6 +290,7 @@ class QtdObjectBase
 	/**
 	     
 	*/
+    /+
 	void __ownership(QtdOwnership native)
 	{
 		switch(own)
@@ -310,6 +311,7 @@ class QtdObjectBase
 				assert(false);
 		}
 	}
+    +/
 	
 	/**
 		Returns true if garbage collection for this object is disabled.
@@ -351,15 +353,13 @@ abstract class QtdObject : QtdObjectBase
     this(void* nativeId, QtdObjectFlags flags = QtdObjectFlags.none)
     {
     	super(nativeId, flags);
-        if (!(__flags & QtdObjectFlags.canHaveDups)
-            && !(__flags & QtdObjectFlags.hasDId))
+        if (!(__flags & QtdObjectFlags.hasDId))
         	metaObject.addRef(this);
     }
     
     ~this()
     {
-    	if (!(__flags & QtdObjectFlags.canHaveDups)
-    	    && !(__flags & QtdObjectFlags.hasDId))
+    	if (!(__flags & QtdObjectFlags.hasDId))
 	    	metaObject.removeRef(this);
     }
     
@@ -379,8 +379,10 @@ extern(C) void qtd_delete_d_object(void* dId)
     }
 }
 
+/+
 extern(C) void qtd_ownership(void* dId, QtdOwnership own)
 {
 	auto obj = cast(QtdObjectBase)dId;
 	obj.__ownership = own;
 }
++/
