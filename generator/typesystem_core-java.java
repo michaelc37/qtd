@@ -72,8 +72,8 @@ class QObject___ extends QObject {
         }
     }
     */
-       
-    override void onSignalHandlerCreated(ref SignalHandler sh)
+
+    void onSignalHandlerCreated(ref SignalHandler sh)
     {
         sh.signalEvent = &onSignalEvent;
     }
@@ -135,7 +135,7 @@ class QObject___ extends QObject {
         
         find(children);
         return result;
-    }  
+    }
 }// class
 
 abstract class QAbstractItemModel___ extends QAbstractItemModel {

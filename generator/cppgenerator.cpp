@@ -230,7 +230,7 @@ void CppGenerator::writeFunctionSignature(QTextStream &s,
     s << "(";
     const AbstractMetaClass *owner = java_function->ownerClass();
 
-    bool has_d_ptr = java_function->isConstructor() && owner && owner->typeEntry()->isObject();
+    bool has_d_ptr = java_function->isConstructor() && owner && owner->isPolymorphic();
     const AbstractMetaArgumentList arg_list = java_function->arguments();
     if (has_d_ptr) {
         s << "void *d_ptr";

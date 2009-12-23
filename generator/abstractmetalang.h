@@ -784,12 +784,49 @@ public:
     void setForceShellClass(bool on) { m_force_shell_class = on; }
     bool generateShellClass() const;
 
-    bool hasVirtualSlots() const { return m_has_virtual_slots; }       
-    bool hasVirtualFunctions() const { return !isFinal() && (m_has_virtuals || hasVirtualDestructor()); }
+    bool hasVirtualSlots() const { return m_has_virtual_slots; }
+
+    // returns true if this class has overridable virtual functions other than
+    // the virtual destructor if one exists.
+    bool hasVirtualFunctions() const { return !isFinal() && m_has_virtuals;  }
+
+    // returns true if this class or its base classes define a
+    // virtual destructor
     bool hasVirtualDestructor() const { return m_has_virtual_destructor
-        || (m_base_class && m_base_class->hasVirtualDestructor()); }
+        || m_base_class && m_base_class->hasVirtualDestructor(); }
+
+    // returns the uppermost base class having virtual functions
+    const AbstractMetaClass* polymorphicBase() const
+    {
+        const AbstractMetaClass*  ret = this;
+        for (const AbstractMetaClass* base = this->m_base_class; base; base = base->m_base_class)
+        {
+            if (base->m_has_virtuals || base->m_has_virtual_destructor)
+                ret = base;
+        }
+        return ret;
+    }
+
+    // returns true if this class or its base classes have any virtual functions
+    bool isPolymorphic() const { return m_has_virtuals
+                             || m_has_virtual_destructor
+                             || m_base_class && m_base_class->isPolymorphic();
+    }
+
+    // returns the uppermost base class with virtual destructors
+    const AbstractMetaClass* virtualDestructorBase() const
+    {
+        const AbstractMetaClass* ret = NULL;
+        for (const AbstractMetaClass* base = this; base; base = base->m_base_class)
+        {
+            if (base->m_has_virtual_destructor)
+                ret = base;
+        }
+        return ret;
+    }
+
     bool setHasVirtualDestructor(bool value) { m_has_virtual_destructor = value; }
-    bool isPolymorphic() const { return typeEntry()->isObject() && (hasVirtualFunctions() || hasVirtualDestructor()); }
+
     bool hasProtectedFunctions() const;
 
     QList<TypeEntry *> templateArguments() const { return m_template_args; }

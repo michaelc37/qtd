@@ -2374,7 +2374,7 @@ extern "C" DLL_PUBLIC void qtd_create_qobject_entity(void* nativeId, void *dId)
 	new QtD_QObjectEntity((QObject*)nativeId, dId);
 }
 
-extern "C" DLL_PUBLIC void* qtd_QObject_metaObject(void* nativeId)
+extern "C" DLL_PUBLIC void* qtd_QObject_typeId(void* nativeId)
 {
     return (void*)((QObject*)nativeId)->metaObject();
 }
@@ -2402,10 +2402,8 @@ extern "C" DLL_PUBLIC void qtd_disconnect(void* nativeId, char* signal, int id, 
 	<inject-code class="java-free">
 extern(C) void* qtd_get_d_qobject(void* nativeId);
 extern(C) void* qtd_create_qobject_entity(void* nativeId, void* dId);
-extern(C) void* qtd_QObject_metaObject(void* nativeId);
 extern(C) void qtd_connect(void *nativeId, cstringz signal, int id, bool hasDId);
 extern(C) void qtd_disconnect(void *nativeId, cstringz signal, int id, bool hasDId);
-
 	</inject-code>
 
     <modify-function signature="childEvent(QChildEvent*)">

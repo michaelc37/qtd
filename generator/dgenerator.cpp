@@ -23,7 +23,7 @@
 * are described in the Nokia Qt GPL Exception version 1.2, included in
 * the file GPL_EXCEPTION.txt in this package.
 *
-* Qt for Windows(R) Licensees
+* Qt for Win1782dows(R) Licensees
 * As a special exception, Nokia, as the sole copyright holder for Qt
 * Designer, grants users of the Qt/Eclipse Integration plug-in the
 * right for the Qt/Eclipse Integration to link to functionality
@@ -772,7 +772,7 @@ void DGenerator::writeJavaCallThroughContents(QTextStream &s, const AbstractMeta
 
     if (d_function->isConstructor() &&
         ( d_function->implementingClass()->isPolymorphic()
-        || d_function->implementingClass()->typeEntry()->isObject() ) ) { // qtd
+        /*|| d_function->implementingClass()->typeEntry()->isObject()*/ ) ) { // qtd
         s << "cast(void*) this";
         if (arguments.count() > 0)
             s << ", ";
@@ -1680,18 +1680,23 @@ void DGenerator::writeDestructor(QTextStream &s, const AbstractMetaClass *d_clas
     if (!d_class->hasConstructors())
         return;
 
-    s << "    override void __deleteNative() {" << endl
-        << "        qtd_" << d_class->name() << "_destructor(__nativeId);" << endl
-        << "    }" << endl;
+    if (d_class->polymorphicBase() == d_class)
+    {
+        s << "    override void __deleteNative() {" << endl
+            << "        qtd_" << d_class->polymorphicBase()->name() << "_delete(__nativeId);" << endl
+            << "    }" << endl;
+    }
 }
 
 void DGenerator::writeOwnershipSetter(QTextStream &s, const AbstractMetaClass *d_class)
 {
     if (d_class->isInterface() || d_class->isNamespace())
-        s << INDENT << "void __nativeOwnership(bool value);";
+    {
+        //s << INDENT << "void __nativeOwnership(bool value);";
+    }
     else if (d_class->typeEntry()->isObject())
     {// COMPILER BUG:
-        s << INDENT << "void __nativeOwnership(bool value) { super.__nativeOwnership = value; }";
+        //s << INDENT << "void __nativeOwnership(bool value) { super.__nativeOwnership = value; }";
     }
 }
 
@@ -1756,30 +1761,12 @@ void DGenerator::writeSignalHandlers(QTextStream &s, const AbstractMetaClass *d_
                 {
                     bool resetAfterUse = !type->isQObject() && signal->resetObjectAfterUse(argument->argumentIndex() + 1);
 
-                    if ((static_cast<const ComplexTypeEntry*>(type->typeEntry()))->isPolymorphic())
-                    {
-                        QString flags;
-                        if (resetAfterUse)
-                            flags = "QtdObjectFlags.stackAllocated | QtdObjectFlags.skipNativeDelete";
-                        else
-                            flags = "QtdObjectFlags.none";
-                        
-                        s << INDENT << "auto " << arg_name << " = " << type->typeEntry()->name() << ".__wrap(" << arg_name
-                            << ", cast(QtdObjectFlags)(" << flags << "));" << endl;
-
-                        if (resetAfterUse)
-                        {
-                            s << INDENT << "scope(exit) {" << endl
-                              << INDENT << "    if (" << arg_name << "_d_ref.__flags & QtdObjectFlags.stackAllocated)" << endl
-                              << INDENT << "        delete " << arg_name << ";" << endl
-                              << INDENT << "}" << endl;
-                        }
-                    }
+                    if (resetAfterUse)
+                        s << "auto " << arg_name << " = scopeObject!(" << type->typeEntry()->name() << ")(" << arg_name << ");";
                     else
                     {
-                        s << INDENT << (resetAfterUse ? "scope " : "auto ")
-                          << arg_name << "_d_ref = new " << type->typeEntry()->name() << "(" << arg_name << ", QtdObjectFlags."
-                          << (resetAtferUse ? "skipNativeDelete" : "none") << ");" << endl;
+                        s << INDENT << "auto " << arg_name << " = " << type->typeEntry()->name() << ".__wrap(" << arg_name
+                          << ");" << endl;
                     }
                 }
 
@@ -1813,7 +1800,7 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
     auxFile.isDone = true;
     auxFile.stream << "module " << auxModName << ";" << endl << endl;
 
-    bool staticInit = (d_class->typeEntry()->isObject() && d_class->isPolymorphic()) || (cpp_shared && d_class->generateShellClass() && !d_class->isInterface());
+    bool staticInit = d_class->isPolymorphic() || (cpp_shared && d_class->generateShellClass() && !d_class->isInterface());
     if (staticInit)
     {
         auxFile.isDone = false;
@@ -1921,7 +1908,7 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
           << "public import qt.core.Qt;" << endl
           << "public import qt.QtdObject;" << endl
           << "private import qt.core.QString;" << endl
-          << "private import qt.qtd.Array;" << endl;
+          << "private import qt.Array;" << endl;
         if (d_class->isQObject()) {
             s << "public import qt.core.QMetaObject;" << endl;
             s << "public import qt.Signal;" << endl;
@@ -1952,7 +1939,8 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
             s << "import std.stdio;" << endl
               << "import std.string;" << endl
               << "import std.utf;" << endl
-              << "import core.memory;" << endl;
+              << "import core.memory;" << endl
+              << "import qt.Core;" << endl;
         }
         else
         {
@@ -2023,11 +2011,10 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
         if (d_class->baseClass()) {
             s << d_class->baseClass()->name();
         } else {
-            if (d_class->typeEntry()->isValue())
+            if (d_class->isQObject())
                 s << "QtdObjectBase";
-            else if (d_class->typeEntry()->isObject())
+            else
                 s << "QtdObject";
-
         }
     }/* qtd else if (d_class->isInterface()) {
         s << " extends QtJambiInterface";
@@ -2109,18 +2096,17 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
                 s << INDENT << "@SuppressWarnings(\"unused\")" << endl;
 */
             if (actions != ReferenceCount::Set && actions != ReferenceCount::Ignore) { // qtd2
-
-            s << INDENT;
-            switch (access) {
-            case ReferenceCount::Private:
-                s << "package "; break; // qtd
-            case ReferenceCount::Protected:
-                s << "protected "; break;
-            case ReferenceCount::Public:
-                s << "public "; break;
-            default: // friendly
-            }
-
+                s << INDENT;
+                switch (access) {
+                case ReferenceCount::Private:
+                    s << "package "; break; // qtd
+                case ReferenceCount::Protected:
+                    s << "protected "; break;
+                case ReferenceCount::Public:
+                    s << "public "; break;
+                default: // friendly
+                    break;
+                }
             } // qtd2
 
             if (isStatic)
@@ -2220,36 +2206,13 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
             writeFieldAccessors(s, field);
     }
 
-    if (d_class->typeEntry()->isObject())
-    {
-        if (d_class->isQObject())
-            writeQObjectFunctions(s, d_class);
-        else
-            writeObjectFunctions(s, d_class);
-
-        if (d_class->isPolymorphic())
-        {
-            s << "    static QtdObjectBase __createWrapper(void* nativeId, QtdObjectFlags flags) {" << endl;
-
-            QString className = d_class->name();
-            if (d_class->isAbstract())
-                className += "_ConcreteWrapper";
-
-            s << "        auto obj = new(flags) " << className << "(nativeId, flags);" << endl;
-
-            if (d_class->isQObject())
-               s << "        qtd_" << d_class->name() << "_createEntity(nativeId, cast(void*)obj);" << endl;
-
-          s << "        return obj;" << endl
-            << "    }" << endl << endl;
-        }
-    }
-
-    if (d_class->hasPublicDestructor() && (!d_class->baseClass() || !d_class->hasVirtualFunctions()))
-        writeDestructor(s, d_class);
+    writeDestructor(s, d_class);
 
     // Add dummy constructor for use when constructing subclasses
     if (!d_class->isNamespace() && !d_class->isInterface() && !fakeClass) {
+
+        writeObjectFunctions(s, d_class);
+
         s << endl
           << INDENT << "public "
           << "this";
@@ -2485,21 +2448,19 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
         s  << INDENT << "}" << endl << endl;
     }
 
-    if (d_class->isPolymorphic())
-    {
-        if (!d_class->typeEntry()->isQObject())
-        {
-            s << "extern(C) void* qtd_" << d_class->name() << "_dId(void *q_ptr);" << endl << endl;
-            s << "extern(C) void* qtd_" << d_class->name() << "_typeId(void* nativeId);" << endl;
-        }
 
-        s << "extern(C) void* qtd_" << d_class->name() << "_staticTypeId();" << endl;
+    if (d_class->isPolymorphic() && d_class->polymorphicBase() == d_class)
+    {
+        s << "extern(C) void* qtd_" << d_class->name() << "_dId(void *nativeId);" << endl << endl;
+        s << "extern(C) void* qtd_" << d_class->name() << "_typeId(void* nativeId);" << endl;
     }
+
+    s << "extern(C) void* qtd_" << d_class->name() << "_staticTypeId();" << endl;
 
 //    if (d_class->needsConversionFunc)
 //        writeConversionFunction(s, d_class);
 
-    if (d_class->hasConstructors())
+    if (d_class->hasConstructors() && d_class->polymorphicBase() == d_class)
         s << "extern(C) void qtd_" << d_class->name() << "_destructor(void *ptr);" << endl << endl;
 
     // qtd
@@ -2558,10 +2519,8 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
 
         s << "extern(C) void static_init_" << d_class->name() << "() {" << endl;
 
-        if (d_class->isPolymorphic()) {
-            s << INDENT << "if (!" << d_class->name() << "._staticMetaObject) " << endl
-            << INDENT << "    " << d_class->name() << ".createStaticMetaObject;" << endl << endl;
-        }
+          if (!d_class->isNamespace() && !d_class->isInterface() && !fakeClass)
+              s << "    " << d_class->name() << ".__createMetaObject;" << endl << endl;
 
         if (cpp_shared) {
              // virtual functions
@@ -2614,10 +2573,7 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
 
 
     if (d_class->isQObject())
-    {
-      s << "private extern(C) void* qtd_" << d_class->name() << "_staticMetaObject();" << endl << endl
-        << "private extern(C) void qtd_" << d_class->name() << "_createEntity(void* nativeId, void* dId);" <<  endl << endl;
-    }
+        s << "private extern(C) void qtd_" << d_class->name() << "_createEntity(void* nativeId, void* dId);" <<  endl << endl;
 }
 
 /*
@@ -2657,6 +2613,7 @@ void DGenerator::writeConversionFunction(QTextStream &s, const AbstractMetaClass
 }
 */
 
+/*
 void DGenerator::writeObjectFunctions(QTextStream &s, const AbstractMetaClass *d_class)
 {
     // polymorphic
@@ -2703,47 +2660,80 @@ void DGenerator::writeObjectFunctions(QTextStream &s, const AbstractMetaClass *d
         << "    }" << endl << endl;
     }
     else
-    {
-      s << "    static " << d_class->name() << " __wrap(void* nativeId, QtdObjectFlags flags = QtdObjectFlags.none) {" << endl
-        << "        return new " << d_class->name() << "(nativeId, flags);"
-        << "    }" << endl << endl;
+    {      
     }
 }
+*/
 
-void DGenerator::writeQObjectFunctions(QTextStream &s, const AbstractMetaClass *d_class)
+void DGenerator::writeObjectFunctions(QTextStream &s, const AbstractMetaClass *d_class)
 {
     QString concreteArg;
     if (d_class->isAbstract())
         concreteArg += ", " + d_class->name() + "_ConcreteWrapper";
 
-  s << "    private static QMetaObject _staticMetaObject;" << endl
-    << "    protected static void createStaticMetaObject() {" << endl
-    << "        assert(!_staticMetaObject);" << endl
-    << "        QMetaObject base;" << endl;
+    bool isQObject = d_class->isQObject();
+    QString moName = isQObject ? "QMetaObject" : "QtdMetaObject";
 
-    if (d_class->name() != "QObject")
-    {
-        QString baseName = d_class->baseClassName();
-      s << "        if (!" << baseName << "._staticMetaObject)" << endl
-        << "            " << baseName << ".createStaticMetaObject;" << endl
-        << "        base = " << baseName << "._staticMetaObject;" << endl;
+    s << "    private static __gshared " << moName << " _staticMetaObject;" << endl
+      << "    static void __createMetaObject(){" << endl
+      << "        if (!_staticMetaObject){" << endl
+      << "            QtdMetaObjectBase base;" << endl
+      << "            static if (is(typeof(super.__createMetaObject))) {" << endl
+      << "                alias typeof(super) Base;" << endl
+      << "                Base.__createMetaObject();" << endl
+      << "                base = Base._staticMetaObject;" << endl
+      << "            }" << endl
+      << "            _staticMetaObject = new " << moName << "(qtd_" << d_class->name() << "_staticTypeId, base, &__createWrapper);" << endl
+      << "        }" << endl
+      << "    }" << endl << endl
+
+      << "    " << moName << " metaObject(){" << endl
+      << "        return _staticMetaObject;" << endl
+      << "    }" << endl << endl
+      << "    static " << moName << " staticMetaObject() {" << endl
+      << "        return _staticMetaObject;" << endl
+      << "    }" << endl << endl
+
+      << "    static QtdObjectBase __createWrapper(void* nativeId, QtdObjectFlags flags) {" << endl;
+
+    QString className = d_class->name();
+    if (d_class->isAbstract())
+        className += "_ConcreteWrapper";
+
+    s << "        auto obj = new(flags) " << className << "(nativeId, flags);" << endl;
+
+    if (d_class->isQObject())
+        s << "        qtd_" << d_class->name() << "_createEntity(nativeId, cast(void*)obj);" << endl;
+
+    s << "        return obj;" << endl
+      << "    }" << endl << endl;
+
+    if (!isQObject)
+    {        
+        if (d_class->isPolymorphic())
+        {
+            const AbstractMetaClass* polyBase = d_class->polymorphicBase();
+            s << "    static " << d_class->name() << " __wrap(void* nativeId, QtdObjectFlags flags = QtdObjectFlags.none) {" << endl
+              << "        auto obj = cast("  << d_class->name() << ") qtd_" << polyBase->name() << "_dId(nativeId);" << endl
+              << "        if (!obj)" << endl
+              << "            obj = static_cast!(" << d_class->name() << ")(_staticMetaObject.wrap(nativeId, "
+                                "qtd_" << polyBase->name() << "_typeId(nativeId), flags));" << endl
+              << "        return obj;" << endl
+              << "    }" << endl << endl;
+        }
+        else
+        {
+            s << "    static " << d_class->name() << " __wrap(void* nativeId, QtdObjectFlags flags = QtdObjectFlags.none) {" << endl
+              << "        return new(flags) " << d_class->name() << "(nativeId, flags);" << endl
+              << "    }" << endl << endl;
+        }
     }
-
-  s << "        _staticMetaObject = new QMetaObject(qtd_" << d_class->name() << "_staticMetaObject, base);"   << endl
-    << "        _staticMetaObject.construct!(" << d_class->name() << concreteArg << ");" << endl
-    << "    }" << endl << endl
-
-    << "    QMetaObject metaObject() {" << endl
-    << "        return _staticMetaObject;" << endl
-    << "    }" << endl << endl
-
-    << "    static QMetaObject staticMetaObject() {" << endl
-    << "        return _staticMetaObject;" << endl
-    << "    }" << endl << endl
-
-    << "    static " << d_class->name() << " __wrap(void* nativeId, QtdObjectFlags flags = QtdObjectFlags.none) {" << endl
-    << "        return static_cast!(" << d_class->name() << ")(_staticMetaObject.wrap(nativeId, flags));" << endl
-    << "    }" << endl << endl;
+    else
+    {
+        s << "    static " << d_class->name() << " __wrap(void* nativeId, QtdObjectFlags flags = QtdObjectFlags.none) {" << endl
+          << "        return static_cast!" << d_class->name() << "(" << d_class->name() << "._staticMetaObject.wrap(nativeId, flags));" << endl
+          << "    }" << endl << endl;
+    }    
 }
 
 /*
@@ -2908,30 +2898,13 @@ void DGenerator::writeShellVirtualFunction(QTextStream &s, const AbstractMetaFun
                 {
                     bool resetAfterUse = !type->isQObject() && d_function->resetObjectAfterUse(argument->argumentIndex() + 1);
 
-                    if ((static_cast<const ComplexTypeEntry*>(type->typeEntry()))->isPolymorphic())
-                    {
-                        QString flags;
-                        if (resetAfterUse)
-                            flags = "QtdObjectFlags.stackAllocated | QtdObjectFlags.skipNativeDelete";
-                        else
-                            flags = "QtdObjectFlags.none";
-                        
-                        s << INDENT << "auto " << arg_name << "_d_ref = " << type->typeEntry()->name() << ".__wrap(" << arg_name
-                            << ", cast(QtdObjectFlags)(" << flags << "));" << endl;
 
-                        if (resetAfterUse)
-                        {
-                            s << INDENT << "scope(exit) {" << endl
-                              << INDENT << "    if (" << arg_name << "_d_ref.__flags & QtdObjectFlags.stackAllocated)" << endl
-                              << INDENT << "        delete " << arg_name << ";" << endl
-                              << INDENT << "}" << endl;
-                        }
-                    }
+                    if (resetAfterUse)
+                        s << INDENT << "auto " << arg_name << "_d_ref = scopeObject!(" << type->typeEntry()->name() << ")(" << arg_name << ");";
                     else
                     {
-                        s << INDENT << (resetAfterUse ? "scope " : "auto ")
-                          << arg_name << "_d_ref = new " << type->typeEntry()->name() << "(" << arg_name << ", QtdObjectFlags."
-                          << (resetAtferUse ? "skipNativeDelete" : "none") << ");" << endl;
+                        s << INDENT << "auto " << arg_name << "_d_ref = " << type->typeEntry()->name() << ".__wrap(" << arg_name
+                              << ");" << endl;                        
                     }
                 }
                 else

@@ -250,7 +250,7 @@ void CppHeaderGenerator::write(QTextStream &s, const AbstractMetaClass *java_cla
     s  << "};" << endl << endl;
     
     if (!java_class->isQObject() && java_class->isPolymorphic() && java_class->baseClass())
-        s << "extern \"C\" DLL_PUBLIC void* qtd_" << java_class->rootClass()->name() << "_dId(void *nativeId);" << endl;
+        s << "extern \"C\" DLL_PUBLIC void* qtd_" << java_class->polymorphicBase()->name() << "_dId(void *nativeId);" << endl;
    
     s << "#endif // " << include_block << endl;
 

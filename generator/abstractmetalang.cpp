@@ -1159,13 +1159,15 @@ bool AbstractMetaClass::hasProtectedFunctions() const {
 
 bool AbstractMetaClass::generateShellClass() const
 {
-    return m_force_shell_class ||
-        m_has_virtual_destructor ||
-    (!isFinal()
-        && (hasVirtualFunctions()
+    return m_force_shell_class ||         
+    ( /*!isFinal()
+        && ( */
+        isPolymorphic()
         || hasProtectedFunctions()
         || hasFieldAccessors()
-        || typeEntry()->isObject())); // qtd2 for being more consistent
+        //|| typeEntry()->isObject() // qtd2 for being more consistent
+        /*)*/
+        );
 }
 
 QPropertySpec *AbstractMetaClass::propertySpecForRead(const QString &name) const
@@ -1340,7 +1342,7 @@ void AbstractMetaClass::addDefaultConstructor()
     f->setImplementingClass(this);
     f->setOriginalAttributes(f->attributes());
 
-    /*addFunction*/(f);
+    addFunction(f);
 }
 
 bool AbstractMetaClass::hasFunction(const AbstractMetaFunction *f) const

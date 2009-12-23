@@ -912,7 +912,7 @@ private:
     uint m_polymorphic_base : 1;
     uint m_generic_class : 1;
 
-    QString m_polymorphic_id_value;e
+    QString m_polymorphic_id_value;
     QString m_lookup_name;
     QString m_target_type;
     ExpensePolicy m_expense_policy;
