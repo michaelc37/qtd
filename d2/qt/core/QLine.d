@@ -70,7 +70,7 @@ public struct QLine
         return pt2.y() - pt1.y();
     }
 
-    void translate(ref QPoint point)
+    void translate(auto_ref!QPoint point)
     {
         pt1 += point;
         pt2 += point;
@@ -81,7 +81,7 @@ public struct QLine
         translate(QPoint(adx, ady));
     }
 
-    QLine translated(ref QPoint p) // const
+    QLine translated(auto_ref!QPoint p) // const
     {
         return QLine(pt1 + p, pt2 + p);
     }
@@ -239,7 +239,7 @@ public struct QLineF
         return QLineF(p1(), p1() + QPointF(dy(), -dx()));
     }
 
-    void translate(ref QPointF point)
+    void translate(auto_ref!QPointF point)
     {
         pt1 += point;
         pt2 += point;
@@ -250,7 +250,7 @@ public struct QLineF
         this.translate(QPointF(adx, ady));
     }
 
-    QLineF translated(ref QPointF p) // const
+    QLineF translated(auto_ref!QPointF p) // const
     {
         return QLineF(pt1 + p, pt2 + p);
     }

@@ -187,7 +187,7 @@ ref qreal ry()
     bool opEquals(ref const QPointF p) const
     { return qFuzzyCompare(xp, p.xp) && qFuzzyCompare(yp, p.yp); }
 
-    QPointF opAdd(ref QPointF p)
+    QPointF opAdd(auto_ref!QPointF p)
     { return QPointF(this.xp+p.xp, this.yp+p.yp); }
 
     QPointF opSub(ref QPointF p)

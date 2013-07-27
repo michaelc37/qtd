@@ -62,7 +62,7 @@ string MESSAGE = tr("<p>Message boxes have a caption, a text, "
                "will activate the detected escape button (if any).");
 
 
-class Dialog : public QDialog
+class Dialog : QDialog
 {
 public:
 
@@ -200,7 +200,7 @@ public:
 		setWindowTitle(tr("Standard Dialogs"));
 	}
 
-private: // slots
+public: // slots
 
 	void slot_setInteger()
 	{

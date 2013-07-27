@@ -59,7 +59,7 @@ import tango.text.convert.Format;
 import tango.text.Ascii;
 
 
-class Screenshot : public QWidget
+class Screenshot : QWidget
 {
 public:
 	

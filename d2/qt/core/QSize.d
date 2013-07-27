@@ -62,7 +62,7 @@ public struct QSize
     	scale(QSize(w, h), mode);
     }
     
-    void scale(ref QSize s, Qt.AspectRatioMode mode) {
+    void scale(auto_ref!QSize s, Qt.AspectRatioMode mode) {
     	__qtd_QSize_scale_QSize_AspectRatioMode(&this, &s, mode);
     }
 

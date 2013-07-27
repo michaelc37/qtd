@@ -58,7 +58,7 @@ import qt.gui.QMessageBox;
 import qt.gui.QGridLayout;
 
 
-class Window : public QDialog
+class Window : QDialog
 {
 public:
 

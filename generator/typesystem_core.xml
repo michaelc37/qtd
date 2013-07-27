@@ -586,6 +586,12 @@
     <modify-function signature="mightBeRichText(const QString &amp;)" remove="all"/>
     <modify-function signature="escape(const QString&amp;)" remove="all"/>
     <modify-function signature="convertFromPlainText(const QString &amp;, Qt::WhiteSpaceMode)" remove="all"/>
+    <inject-code class="java-free">
+template auto_ref(T)
+{
+	alias auto ref T auto_ref;
+}    
+    </inject-code>    
   </namespace-type>
 
 

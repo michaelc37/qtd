@@ -420,7 +420,7 @@ public string generateSignalEmitters(uint signalCount)
     return res;
 }
 
-mixin template SlotAlias(alias slot)
+public mixin template SlotAlias(alias slot)
 {
     mixin ("alias slot " ~ methodName!slot ~ ";");
 }
@@ -512,7 +512,7 @@ public: // required to override the outside scope protection.
     //pragma(msg, generateMetaInfo!This());
     mixin (generateMetaInfo!This());
 
-    protected int qt_metacall(MetaCall _c, int _id, void **_a)
+    protected override int qt_metacall(MetaCall _c, int _id, void **_a)
     {
         _id = super.qt_metacall(_c, _id, _a);
 

@@ -245,7 +245,7 @@ QString DGenerator::argumentString(const AbstractMetaFunction *d_function,
     AbstractMetaType *type = d_argument->type();
     // qtd2 if argument is "QString &" ref attribute needed FIXME maybe we need this not only for QString, but for other Value types??
     if (type->typeEntry()->isValue() && type->isNativePointer() && type->typeEntry()->name() == "QString")
-        arg = "ref ";
+        arg = "auto_ref!";
 
     if (modified_type.isEmpty())
         arg += translateType(d_argument->type(), d_function->implementingClass(), (Option) options);
@@ -1739,7 +1739,7 @@ void DGenerator::writeOwnershipSetter(QTextStream &s, const AbstractMetaClass *d
     if (d_class->isInterface())
         s << INDENT << "void qtdSetOwnership(QtdObjectOwnership own) const;";
     else if (!d_class->isNamespace()) // COMPILER BUG:
-        s << INDENT << "void qtdSetOwnership(QtdObjectOwnership own) const { super.qtdSetOwnership(own); }";
+        s << INDENT << "override void qtdSetOwnership(QtdObjectOwnership own) const { super.qtdSetOwnership(own); }";
 }
 
 void DGenerator::writeSignalHandlers(QTextStream &s, const AbstractMetaClass *d_class)
@@ -2750,12 +2750,14 @@ void DGenerator::writeQObjectFunctions(QTextStream &s, const AbstractMetaClass *
     QString concrete_name = d_class->isAbstract() ? d_class->name() + "_ConcreteWrapper" : d_class->name();
 
     if (!d_class->isFinal()) {
-        s << "    int qt_metacall(MetaCall _c, int _id, void **_a) {" << endl
+        if (d_class->name() != "QObject")
+            s << "override ";
+        s << " int qt_metacall(MetaCall _c, int _id, void **_a) {" << endl
           << "        return qtd_" << d_class->name() << "_qt_metacall(qtdNativeId, _c, _id, _a);" << endl
           << "    }" << endl << endl;
     }
 
-    s << "    @property QMetaObject metaObject() {" << endl
+    s << "    @property override QMetaObject metaObject() {" << endl
       << "        return staticMetaObject;" << endl
       << "    }" << endl << endl
 
@@ -2892,8 +2894,10 @@ void DGenerator::writeNativeField(QTextStream &s, const AbstractMetaField *field
 void DGenerator::writeSignalSignatures(QTextStream &s, const AbstractMetaClass *d_class, AbstractMetaFunctionList signal_funcs)
 {
     writeMetaMethodSignatures(s, "__signalSignatures", signal_funcs);
-
-    s << INDENT << "int signalSignature(int signalId, ref stringz signature) {" << endl;
+    s << INDENT;
+    if (d_class->name() != "QObject")
+        s << "override ";
+    s << INDENT << " int signalSignature(int signalId, ref stringz signature) {" << endl;
     {
         Indentation indent(INDENT);
 
@@ -3357,6 +3361,51 @@ void DGenerator::writeFunctionAttributes(QTextStream &s, const AbstractMetaFunct
         if (isStatic && !(options & ExternC)) s << "static ";
     }
 
+    //write override keyword attribute
+    if ((!(attr & AbstractMetaAttributes::Static)) 
+        && (!(options & ExternC))
+        && (!notWrappedYet(d_function))
+        && (!(attr & AbstractMetaAttributes::Native))) {
+
+        bool do_override = false;
+        if ((d_function->name() == "toString") && (d_function->arguments().size() == 0))  {
+            //Object.toString() is not known by the typesystem so, must manually override
+            do_override = true;
+        } else {        
+            const AbstractMetaClass *d_base_class = d_function->ownerClass();    
+            d_base_class = d_base_class? d_base_class->baseClass() : NULL;
+            while (d_base_class && !do_override) {
+                AbstractMetaFunctionList d_base_class_functions = d_base_class->queryFunctionsByName(d_function->name());
+                if (d_base_class_functions.size() > 0) {
+                    foreach (const AbstractMetaFunction *base_function, d_base_class_functions) {
+                        //modified attributes
+                        uint base_include_attribs = 0; 
+                        uint base_exclude_attribs = 0;
+
+                        retrieveModifications(base_function, d_base_class, &base_exclude_attribs, &base_include_attribs);
+                        uint base_function_attr = base_function->attributes() & (~base_exclude_attribs) | base_include_attribs;
+
+                        if (base_function->minimalSignature() == d_function->minimalSignature()) {
+
+                            if ( (!(base_function_attr & AbstractMetaAttributes::Private)) 
+                            && (!(base_function_attr & AbstractMetaAttributes::FinalInTargetLang)) ) {
+
+                                do_override = true;
+                                break;
+                            }
+                        }
+                    }           
+                }
+
+                d_base_class = d_base_class->baseClass(); 
+            }
+        }
+
+        if (do_override)
+        s << "override ";
+    }
+    
+    
     if ((options & SkipReturnType) == 0) {
         QString modified_type = d_function->typeReplaced(0);
         if (options & ExternC) {
