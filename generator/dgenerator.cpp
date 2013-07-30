@@ -851,7 +851,14 @@ void DGenerator::writeJavaCallThroughContents(QTextStream &s, const AbstractMeta
             } else if (!type->hasNativeId() && !(te->isValue() && type->isNativePointer())) { // qtd2 hack for QStyleOption not being a nativeId based for some reason
                 s << arg_name;
             } else if (te->isStructInD()) {
-                s << arg_name;
+                if (te->name() != "QModelIndex") {
+                    //qtd - pass pointers of structs to cpp exported functions
+                    //also, cast constant structs to structs for calling exported cpp functions to avoid d compiler error
+                    if (type->isConstant())
+                        s << "cast(" << te->name() << "*)";                    
+                    s << "&";
+                }
+                s << arg_name;                
             } else {
                 bool force_abstract = te->isComplex() && (((static_cast<const ComplexTypeEntry *>(te))->typeFlags() & ComplexTypeEntry::ForceAbstract) != 0);
                 if (!force_abstract) {

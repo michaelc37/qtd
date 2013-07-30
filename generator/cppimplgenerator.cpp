@@ -1876,7 +1876,7 @@ void CppImplGenerator::writeBaseClassFunctionCall(QTextStream &s,
             s << implementor->qualifiedCppName() << "::";
         }
         s << java_function->originalName() << "(";
-        writeFunctionCallArguments(s, java_function, QString(), Option(options | ForceEnumCast));
+        writeFunctionCallArguments(s, java_function, QString(), Option(options | ForceEnumCast | SuperCall));
         s << ");" << endl;
     }
 }
@@ -2025,6 +2025,9 @@ void CppImplGenerator::writeFinalFunctionArguments(QTextStream &s, const Abstrac
                         s << "const(QModelIndexAccessor)";
                     else
                         s << "QModelIndexAccessor";
+                } else if (te->isStructInD()) {
+                    //qtd - pass pointers of structs to cpp exported functions
+                    s << te->qualifiedCppName() << "*";       
                 } else if (te->isStructInD())
                     s << te->qualifiedCppName();
                 else
@@ -2355,6 +2358,9 @@ void CppImplGenerator::writeFieldAccessors(QTextStream &s, const AbstractMetaFie
                 src = "__qt_" + argument->indexedName();
             } else if (argument->type()->name() == "QModelIndex") {
                 src = "qtd_to_QModelIndex(" + argument->indexedName() + ")";
+            } else if (argument->type()->typeEntry()->isStructInD()) {
+                //qtd - pass pointers of structs to cpp exported functions
+                src = "*"  + argument->indexedName();
             } else
                 src = argument->indexedName();
 
@@ -3648,9 +3654,12 @@ void CppImplGenerator::writeFunctionCallArguments(QTextStream &s,
                 s << "&";
 
             if ( (options & VirtualDispatch)
-                 && ( a_type->isTargetLangString() || a_type->name() == "QModelIndex" ) )
+                 && ( a_type->isTargetLangString() || a_type->name() == "QModelIndex" ) ) {
                 ;
-            else if (cls == 0 || cls->templateArguments().size() == a_type->instantiations().size()) {
+            } else if (!(options & VirtualDispatch) && !(options & SuperCall) && a_type->isReference() && a_type->typeEntry()->isStructInD() && a_type->name() != "QModelIndex") {
+                //qtd - pass pointers of structs to cpp exported functions
+                s << "*";              
+            } else if (cls == 0 || cls->templateArguments().size() == a_type->instantiations().size()) {
                 s << "(";
                 writeTypeInfo(s, a_type, options);
                 s << ")";
