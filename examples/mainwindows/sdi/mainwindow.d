@@ -60,7 +60,7 @@ import qt.core.QTextStream;
 //import std.string;
 import std.conv;
 
-class MainWindow : public QMainWindow
+class MainWindow : QMainWindow
 {
   //    Q_OBJECT
 
@@ -79,7 +79,7 @@ class MainWindow : public QMainWindow
 
  protected:
 
-  void closeEvent(QCloseEvent event)
+  override void closeEvent(QCloseEvent event)
   {
     if (maybeSave()) {
       writeSettings();
@@ -89,7 +89,7 @@ class MainWindow : public QMainWindow
     }
   }
 
- private: // slots
+ public: // slots
 
   void slot_newFile()
   {

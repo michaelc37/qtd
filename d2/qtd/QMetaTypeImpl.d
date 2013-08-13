@@ -13,7 +13,7 @@ import
 import std.stdio;
 import std.conv;
 
-private struct DArrayToC
+public struct DArrayToC
 {
     void[] array;
 }

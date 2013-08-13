@@ -82,10 +82,10 @@ public struct QSize
         __qtd_QSize_readFrom_QDataStream(&this, arg__1 is null ? null : arg__1.nativeId);
     }
 */
-	QSize opAddAssign(ref QSize s)
+	QSize opAddAssign(auto_ref!QSize s)
 	{ wd+=s.wd; ht+=s.ht; return this; }
 
-	QSize opSubAssign(ref QSize s)
+	QSize opSubAssign(auto_ref!QSize s)
 	{ wd-=s.wd; ht-=s.ht; return this; }
 
 	QSize opMulAssign(qreal c)
@@ -94,10 +94,10 @@ public struct QSize
 	bool opEquals(ref const QSize s) const
 	{ return wd == s.wd && ht == s.ht; }
 
-	QSize opAdd(ref QSize s)
+	QSize opAdd(auto_ref!QSize s)
 	{ return QSize(this.wd+s.wd, this.ht+s.ht); }
 
-	QSize opSub(ref QSize s)
+	QSize opSub(auto_ref!QSize s)
 	{ return QSize(this.wd-s.wd, this.ht-s.ht); }
 
 	QSize opMul(qreal c)
@@ -149,7 +149,7 @@ public struct QSizeF
 		return sz;
 	}
 
-	public static QSizeF opCall(ref QSizeF s) {
+	public static QSizeF opCall(auto_ref!QSizeF s) {
 		QSizeF sz;
 		sz.wd = s.width(); sz.ht = s.height();
 		return sz;
@@ -200,10 +200,10 @@ public struct QSizeF
     	ht = tmp;
 	}
 
-	QSizeF expandedTo(ref QSizeF otherSize)
+	QSizeF expandedTo(auto_ref!QSizeF otherSize)
 	{ return QSizeF(qMax(wd,otherSize.wd), qMax(ht,otherSize.ht)); }
 
-	QSizeF boundedTo(ref QSizeF otherSize)
+	QSizeF boundedTo(auto_ref!QSizeF otherSize)
 	{ return QSizeF(qMin(wd,otherSize.wd), qMin(ht,otherSize.ht)); }
 
 	QSize toSize()
@@ -216,10 +216,10 @@ public struct QSizeF
     public final void readFrom(QDataStream arg__1) {
         __qtd_QSizeF_readFrom_QDataStream(&this, arg__1 is null ? null : arg__1.nativeId);
 */
-	QSizeF opAddAssign(ref QSizeF s)
+	QSizeF opAddAssign(auto_ref!QSizeF s)
 	{ wd += s.wd; ht += s.ht; return this; }
 
-	QSizeF opSubAssign(ref QSizeF s)
+	QSizeF opSubAssign(auto_ref!QSizeF s)
 	{ wd -= s.wd; ht -= s.ht; return this; }
 
 	QSizeF opMulAssign(qreal c)
@@ -228,10 +228,10 @@ public struct QSizeF
 	bool opEquals(ref const QSizeF s) const
 	{ return qFuzzyCompare(wd, s.wd) && qFuzzyCompare(ht, s.ht); }
 
-	QSizeF opAdd(ref QSizeF s)
+	QSizeF opAdd(auto_ref!QSizeF s)
 	{ return QSizeF(this.wd+s.wd, this.ht+s.ht); }
 
-	QSizeF opSub(ref QSizeF s)
+	QSizeF opSub(auto_ref!QSizeF s)
 	{ return QSizeF(this.wd-s.wd, this.ht-s.ht); }
 
 	QSizeF opMul(qreal c)

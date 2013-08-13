@@ -46,7 +46,7 @@ import qt.gui.QSizePolicy;
 import qt.core.QSize;
 
 
-class Button : public QToolButton
+class Button : QToolButton
 {
 public:
         
@@ -57,7 +57,7 @@ public:
                 setText(text);
         }
 
-        QSize sizeHint() const
+        override QSize sizeHint() const
         {
                 QSize size = super.sizeHint();
                 size.height = size.height + 20;

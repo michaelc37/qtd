@@ -60,7 +60,7 @@ import std.string : format;
 
 import std.stdio;
 
-class Dialog : public QDialog
+class Dialog : QDialog
 {
     this()
     {

@@ -54,7 +54,7 @@ import qt.gui.QDial;
 import qt.gui.QProgressBar;
 
 
-class Dialog : public QDialog
+class Dialog : QDialog
 {
 public:
 
@@ -77,7 +77,7 @@ public:
         setWindowTitle(tr("Dynamic Layouts"));
     }
 
-private: // slots
+public: // slots
 
     void slot_buttonsOrientationChanged(int index)
     {

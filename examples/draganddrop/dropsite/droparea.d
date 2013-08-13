@@ -43,7 +43,7 @@ module droparea;
 
 import qt.gui.QLabel;
 
-class DropArea : public QLabel
+class DropArea : QLabel
 {
 public:
     this(QWidget parent = null)
@@ -69,7 +69,7 @@ public:
     final void signal_changed(QMimeData);
 
 protected:
-    void dragEnterEvent(QDragEnterEvent event)
+    override void dragEnterEvent(QDragEnterEvent event)
     {
         setText(tr("<drop content>"));
         setBackgroundRole(QPalette.Highlight);
@@ -78,18 +78,18 @@ protected:
         changed(event.mimeData);
     }
 
-    void dragMoveEvent(QDragMoveEvent event)
+    override void dragMoveEvent(QDragMoveEvent event)
     {
         event.acceptProposedAction();
     }
 
-    void dragLeaveEvent(QDragLeaveEvent event)
+    override void dragLeaveEvent(QDragLeaveEvent event)
     {
         clearArea();
         event.accept();
     }
 
-    void dropEvent(QDropEvent event)
+    override void dropEvent(QDropEvent event)
     {
         QMimeData mimeData = event.mimeData();
 

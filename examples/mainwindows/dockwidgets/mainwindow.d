@@ -58,7 +58,7 @@ import qt.core.QDate;
 
 import std.string : split;
 
-class MainWindow : public QMainWindow
+class MainWindow : QMainWindow
 {
 //    Q_OBJECT
 
@@ -78,7 +78,7 @@ class MainWindow : public QMainWindow
             newLetter();
         }
 
-    private : //slots:
+    public : //slots:
         void slot_newLetter()
         {
             textEdit.clear();

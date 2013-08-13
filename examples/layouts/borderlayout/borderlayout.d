@@ -40,7 +40,7 @@
 ****************************************************************************/
 module borderlayout;
 
-
+import qt.gui.QLayoutItem;
 import qt.gui.QLayout;
 import qt.gui.QWidgetItem;
 import qt.gui.QTextBrowser;
@@ -48,7 +48,7 @@ import qt.core.QSize;
 import qt.core.QRect;
 
 
-class BorderLayout : public QLayout
+class BorderLayout : QLayout
 {
 public:
 
@@ -68,7 +68,7 @@ public:
 
     ~this()
     {
-        QLayoutItem l = takeAt(0);
+        IQLayoutItem l = takeAt(0);
         while (l) {
             delete l;
             l = takeAt(0);
@@ -194,7 +194,7 @@ override
         return calculateSize(SizeType.SizeHint);
     }
 
-    QLayoutItem takeAt(int index)
+    IQLayoutItem takeAt(int index)
     {
         if (index >= 0 && index < list.length) {
             ItemWrapper layoutStruct = list[index];

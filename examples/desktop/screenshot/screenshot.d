@@ -55,9 +55,16 @@ import qt.gui.QFileDialog;
 import qt.core.QDir;
 import qt.core.QTimer;
 
-import tango.text.convert.Format;
-import tango.text.Ascii;
-
+version(Tango) 
+{
+    import tango.text.convert.Format;
+    import tango.text.Ascii;
+} 
+else version(D_Version2) 
+{
+	alias std.string.format Format;
+	import std.string : toUpper;
+}
 
 class Screenshot : QWidget
 {
@@ -73,13 +80,15 @@ public:
 		createOptionsGroupBox();
 		createButtonsLayout();
 
+		timer = new QTimer();
+
 		mainLayout = new QVBoxLayout;
 		mainLayout.addWidget(screenshotLabel);
 		mainLayout.addWidget(optionsGroupBox);
 		mainLayout.addLayout(buttonsLayout);
 		setLayout(mainLayout);
 
-		shootScreen();
+		slot_shootScreen();
 		delaySpinBox.setValue(5);
 
 		setWindowTitle(tr("Screenshot"));
@@ -88,38 +97,48 @@ public:
 
 protected:
 
-	void resizeEvent(QResizeEvent  /* event */)
+	override void resizeEvent(QResizeEvent  /* event */)
 	{
 		QSize scaledSize = originalPixmap.size();
 		scaledSize.scale(screenshotLabel.size(), Qt.KeepAspectRatio);
-		if (!screenshotLabel.pixmap() || scaledSize != screenshotLabel.pixmap().size())
+		QSize screenshotSize = screenshotLabel.pixmap().size();
+		if (!screenshotLabel.pixmap() || scaledSize != screenshotSize)
 			updateScreenshotLabel();
 	}
 
-	private:
+public:
 
-	void newScreenshot()
+	void slot_newScreenshot()
 	{
 		if (hideThisWindowCheckBox.isChecked())
 			hide();
 		newScreenshotButton.setDisabled(true);
+		//ToDo: see how to fix QTimer.singleShot
+		//QTimer.singleShot(delaySpinBox.value() * 1000, this, slt.ptr);
 
-		QTimer.singleShot(delaySpinBox.value() * 1000, this, SLOT(shootScreen()));
+		timer.setInterval(delaySpinBox.value() * 1000);
+		connect(timer, "timeout", this, "shootScreen");
+		timer.start();
 	}
 
-	void saveScreenshot()
+	void slot_saveScreenshot()
 	{
 		string format = "png";
-		string initialPath = QDir.currentPath() + tr("/untitled.") + format;
+		string initialPath = QDir.currentPath() ~ tr("/untitled.") ~ format;
+		version (Tango)
+			string filter = Format(tr("{} Files (*.{});;All Files (*)"), toUpper(format), format);
+		else
+			string filter = Format(tr("%s Files (*.%s);;All Files (*)"), toUpper(format), format);
 
-		string fileName = QFileDialog.getSaveFileName(this, tr("Save As"), initialPath,
-			Format(tr("{} Files (*.{});;All Files (*)"), toUpper(format), format));
+		string fileName = QFileDialog.getSaveFileName(this, tr("Save As"), initialPath, filter);
+
 		if (fileName.length)
 			originalPixmap.save(fileName, format);
 	}
 
-	void shootScreen()
+	void slot_shootScreen()
 	{
+		timer.stop();
 		if (delaySpinBox.value() != 0)
 			QApplication.beep();
 
@@ -134,7 +153,7 @@ protected:
 			show();
 	}
 
-	void updateCheckBox()
+	void slot_updateCheckBox()
 	{
 		if (delaySpinBox.value() == 0) {
 			hideThisWindowCheckBox.setDisabled(true);
@@ -153,7 +172,7 @@ private:
 		delaySpinBox = new QSpinBox;
 		delaySpinBox.setSuffix(tr(" s"));
 		delaySpinBox.setMaximum(60);
-		connect!("valueChanged")(delaySpinBox, &this.updateCheckBox);
+		connect(delaySpinBox, "valueChanged", this, "updateCheckBox");
 		
 		delaySpinBoxLabel = new QLabel(tr("Screenshot Delay:"));
 
@@ -168,11 +187,11 @@ private:
 
 	void createButtonsLayout()
 	{
-		newScreenshotButton = createButton(tr("New Screenshot"), &this.newScreenshot);
+		newScreenshotButton = createButton(tr("New Screenshot"), "newScreenshot");
 
-		saveScreenshotButton = createButton(tr("Save Screenshot"), &this.saveScreenshot);
+		saveScreenshotButton = createButton(tr("Save Screenshot"), "saveScreenshot");
 
-		quitScreenshotButton = createButton(tr("Quit"), &this.close);
+		quitScreenshotButton = createButton(tr("Quit"), "close");
 
 		buttonsLayout = new QHBoxLayout;
 		buttonsLayout.addStretch();
@@ -181,10 +200,10 @@ private:
 		buttonsLayout.addWidget(quitScreenshotButton);
 	}
 
-	QPushButton createButton(string text, void delegate() slot)
+	QPushButton createButton(string text, string slot)
 	{
 		QPushButton button = new QPushButton(text);
-		connect!("clicked")(button, slot);
+		connect(button, "clicked", this, slot);
 		return button;
 	}
 
@@ -207,4 +226,7 @@ private:
 	QVBoxLayout mainLayout;
 	QGridLayout optionsGroupBoxLayout;
 	QHBoxLayout buttonsLayout;
+	QTimer timer;
+
+	mixin Q_OBJECT;
 }

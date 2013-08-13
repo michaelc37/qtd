@@ -51,7 +51,7 @@ import std.math;
 import std.conv;
 import std.string : format, indexOf; 
 
-class Calculator : public QDialog
+class Calculator : QDialog
 {
 
 public:

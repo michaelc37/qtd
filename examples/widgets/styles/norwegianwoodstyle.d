@@ -48,13 +48,13 @@ import qt.gui.QPushButton;
 import qt.gui.QComboBox;
 
 
-class NorwegianWoodStyle : public QMotifStyle
+class NorwegianWoodStyle : QMotifStyle
 {
 public:
 
 	this() {}
 
-	void polish(QPalette palette)
+	override void polish(QPalette palette)
 	{
 		auto brown = new QColor(212, 140, 95);
 		auto beige = new QColor(236, 182, 120);
@@ -79,7 +79,7 @@ public:
 		setTexture(palette, QPalette.Mid, midImage);
 		setTexture(palette, QPalette.Window, backgroundImage);
 
-		QBrush brush = palette.brush(QPalette.Window); //.background();
+		QBrush brush = cast(QBrush)palette.brush(QPalette.Window); //.background();
 		brush.setColor(brush.color().darker());
 
 		palette.setBrush(QPalette.Disabled, QPalette.WindowText, brush);
@@ -90,19 +90,19 @@ public:
 		palette.setBrush(QPalette.Disabled, QPalette.Mid, brush);
 	}
 
-	void polish(QWidget widget)
+	override void polish(QWidget widget)
 	{
 		if (cast(QPushButton) widget || cast(QComboBox) widget)
 			widget.setAttribute(Qt.WA_Hover, true);
 	}
 
-	void unpolish(QWidget widget)
+	override void unpolish(QWidget widget)
 	{
 		if (cast(QPushButton) widget || cast(QComboBox) widget)
 			widget.setAttribute(Qt.WA_Hover, false);
 	}
 
-	int pixelMetric(PixelMetric metric, QStyleOption option, QWidget widget)
+	override int pixelMetric(PixelMetric metric, QStyleOption option, QWidget widget) const
 	{
 		switch (metric) {
 			case PM_ComboBoxFrameWidth:
@@ -114,7 +114,7 @@ public:
 		}
 	}
 
-	int styleHint(StyleHint hint, QStyleOption option, QWidget widget, QStyleHintReturn returnData)
+	override int styleHint(StyleHint hint, QStyleOption option, QWidget widget, QStyleHintReturn returnData) const
 	{
 		switch (hint) {
 			case SH_DitherDisabledText:
@@ -126,7 +126,7 @@ public:
 		}
 	}
 
-	void drawPrimitive(PrimitiveElement element, QStyleOption option, QPainter painter, QWidget widget)
+	override void drawPrimitive(PrimitiveElement element, QStyleOption option, QPainter painter, QWidget widget) const
 	{
 		switch (element) {
 			case PE_PanelButtonCommand:
@@ -147,14 +147,14 @@ public:
 
 				QStyleOptionButton buttonOption = cast(QStyleOptionButton) option;
 				if (buttonOption && (buttonOption.features & QStyleOptionButton.Flat)) {
-					brush = option.palette.brush(QPalette.Window); //background();
+					brush = cast(QBrush)option.palette.brush(QPalette.Window); //background();
 					darker = cast(bool) (option.state & (State_Sunken | State_On));
 				} else {
 					if (option.state & (State_Sunken | State_On)) {
-						brush = option.palette.mid();
+						brush = cast(QBrush)option.palette.mid();
 						darker = !(option.state & State_Sunken);
 					} else {
-						brush = option.palette.button();
+						brush = cast(QBrush)option.palette.button();
 						darker = false;
 					}
 				}
@@ -225,7 +225,7 @@ public:
 		}
 	}
 
-	void drawControl(ControlElement element, QStyleOption option, QPainter painter, QWidget widget)
+	override void drawControl(ControlElement element, QStyleOption option, QPainter painter, QWidget widget) const
 	{
 		switch (element) {
 			case CE_PushButtonLabel:
@@ -254,7 +254,7 @@ private:
 	static void setTexture(QPalette palette, QPalette.ColorRole role, QPixmap pixmap)
 	{
 		for (int i = 0; i < QPalette.NColorGroups; ++i) {
-			QColor color = palette.brush(cast(QPalette.ColorGroup) i, role).color();
+			QColor color = cast(QColor)palette.brush(cast(QPalette.ColorGroup) i, role).color();
 			palette.setBrush(cast(QPalette.ColorGroup) i, role, new QBrush(color, pixmap));
 		}
 	}

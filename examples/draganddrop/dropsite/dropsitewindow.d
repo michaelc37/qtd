@@ -41,7 +41,7 @@
 
 module dropsitewindow;
 
-import std.string : format, strip, toupper;
+import std.string : format, strip, toUpper;
 
 import qt.gui.QWidget;
 import qt.gui.QLabel;
@@ -52,7 +52,7 @@ import qt.gui.QDialogButtonBox;
 
 import droparea;
 
-class DropSiteWindow : public QWidget
+class DropSiteWindow : QWidget
 {
 public:
 
@@ -125,7 +125,7 @@ public:
             } else {
                 QByteArray data = mimeData.data(format);
                 for (int i = 0; i < data.size() && i < 32; ++i) {
-                    string hex = toupper(std.string.format("%x", data.at(i)));
+                    string hex = toUpper(std.string.format("%x", data.at(i)));
                     text ~= hex ~ " ";
                 }
             }

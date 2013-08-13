@@ -42,7 +42,7 @@ import qt.gui.QHBoxLayout;
 import glwidget;
 import std.stdio;
 
-class Window : public QWidget
+class Window : QWidget
 {
     public:
         this()

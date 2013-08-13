@@ -119,7 +119,7 @@ public:
     }
     
 protected:
-    void keyPressEvent(QKeyEvent event)
+    override void keyPressEvent(QKeyEvent event)
     {
         switch (event.key()) {
         case Qt.Key_Up:
@@ -152,10 +152,11 @@ protected:
         }
     }
     
-    void timerEvent(QTimerEvent event)
+    override void timerEvent(QTimerEvent event)
     {
         Node[] nodes;
         foreach (IQGraphicsItem item; scene().items()) {
+            if (!is(item : Node)) continue;
             if (auto node = cast(Node)item)
                 nodes ~= node;
         }
@@ -175,12 +176,12 @@ protected:
         }
     }
 
-    void wheelEvent(QWheelEvent event)
+    override void wheelEvent(QWheelEvent event)
     {
         scaleView(pow(cast(float)2, cast(float)(-event.delta() / 240.0)));
     }
     
-    void drawBackground(QPainter painter, const QRectF rect)
+    override void drawBackground(QPainter painter, const QRectF rect)
     {
         // Shadow
         QRectF sceneRect = this.sceneRect();
@@ -205,7 +206,7 @@ protected:
         string message = tr("Click and drag the nodes around, and zoom with the mouse "
                            "wheel or the '+' and '-' keys");
 
-        QFont font = painter.font();
+        QFont font = cast(QFont)painter.font();
         font.setBold(true);
         font.setPointSize(14);
         painter.setFont(font);

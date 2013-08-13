@@ -73,7 +73,7 @@ public:
     }
 */
     enum { Type = UserType + 1 };
-    int type() const { return Type; }
+    override int type() const { return Type; }
 
     void calculateForces()
     {
@@ -132,16 +132,16 @@ public:
         return true;
     }
 
-    QRectF boundingRect() const
+    override QRectF boundingRect() const
     {
         qreal adjust = 2;
         return QRectF(-10 - adjust, -10 - adjust,
                       23 + adjust, 23 + adjust);
     }
     
-    QPainterPath shape() const
+    override QPainterPath shape() const
     {
-        QPainterPath path;
+        QPainterPath path = new QPainterPath();
         path.addEllipse(-10, -10, 20, 20);
         return path;
     }

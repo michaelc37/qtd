@@ -48,7 +48,7 @@ import qt.gui.QTextEdit;
 import qt.gui.QGridLayout;
 
 
-class AddressBook : public QWidget
+class AddressBook : QWidget
 {
 public:
 

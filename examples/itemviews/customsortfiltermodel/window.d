@@ -59,7 +59,7 @@ version(D_Version2)
 else
     import mysortfilterproxymodel_d1;
 
-class Window : public QWidget
+class Window : QWidget
 {
 public:
 
@@ -144,7 +144,7 @@ public:
 		sourceView.setModel(model);
 	}
 
-private: // slots
+public: // slots
 
 	void slot_textFilterChanged()
 	{

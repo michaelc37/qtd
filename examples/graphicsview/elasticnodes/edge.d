@@ -104,7 +104,7 @@ public:
     }
 
     enum { Type = UserType + 2 };
-    int type() const { return Type; }
+    override int type() const { return Type; }
     
 protected:
     override QRectF boundingRect() const

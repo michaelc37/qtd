@@ -47,7 +47,7 @@ import qt.core.QDateTime;
 import qt.gui.QSortFilterProxyModel;
 
 
-class MySortFilterProxyModel : public QSortFilterProxyModel
+class MySortFilterProxyModel : QSortFilterProxyModel
 {
 public:
 

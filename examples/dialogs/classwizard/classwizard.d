@@ -54,10 +54,10 @@ import qt.core.QFile;
 import qt.core.QDir;
 import qt.core.QRegExp;
 
-import std.string : format, tolower, toupper;
+import std.string : format, toLower, toUpper;
 
 
-class ClassWizard : public QWizard
+class ClassWizard : QWizard
 {
 public:
 
@@ -76,7 +76,7 @@ public:
 		setWindowTitle(tr("Class Wizard"));
 	}
 
-	void accept()
+	override void accept()
 	{
 		string className = field("className").toString();
 		string baseClass = field("baseClass").toString();
@@ -207,7 +207,7 @@ public:
 }
 
 
-class IntroPage : public QWizardPage
+class IntroPage : QWizardPage
 {
 public:
 
@@ -234,7 +234,7 @@ private:
 	QLabel label;
 }
 	
-class ClassInfoPage : public QWizardPage
+class ClassInfoPage : QWizardPage
 {
 public:
 
@@ -305,7 +305,7 @@ private:
 	QCheckBox copyCtorCheckBox;
 }
 
-class CodeStylePage : public QWizardPage
+class CodeStylePage : QWizardPage
 {
 public:
 
@@ -355,10 +355,10 @@ public:
 
 protected:
 
-	void initializePage()
+	override void initializePage()
 	{
 		string className = field("className").toString();
-		macroNameLineEdit.setText(toupper(className) ~ "_H");
+		macroNameLineEdit.setText(toUpper(className) ~ "_H");
 
 		string baseClass = field("baseClass").toString();
 
@@ -372,7 +372,7 @@ protected:
 		} else if ((new QRegExp("Q[A-Z].*")).exactMatch(baseClass)) {
 			baseIncludeLineEdit.setText("<" ~ baseClass ~ ">");
 		} else {
-			baseIncludeLineEdit.setText("\"" ~ tolower(baseClass) ~ ".h\"");
+			baseIncludeLineEdit.setText("\"" ~ toLower(baseClass) ~ ".h\"");
 		}
 	}
 
@@ -387,7 +387,7 @@ private:
 	QLineEdit baseIncludeLineEdit;
 }
 
-class OutputFilesPage : public QWizardPage
+class OutputFilesPage : QWizardPage
 {
 public:    
 
@@ -426,11 +426,11 @@ public:
 
 protected:
 
-	void initializePage()
+	override void initializePage()
 	{
 		string className = field("className").toString();
-		headerLineEdit.setText(tolower(className) ~ ".h");
-		implementationLineEdit.setText(tolower(className) ~ ".cpp");
+		headerLineEdit.setText(toLower(className) ~ ".h");
+		implementationLineEdit.setText(toLower(className) ~ ".cpp");
 		outputDirLineEdit.setText(QDir.convertSeparators(QDir.tempPath()));
 	}
 
@@ -444,7 +444,7 @@ private:
 	QLineEdit implementationLineEdit;
 }
 
-class ConclusionPage : public QWizardPage
+class ConclusionPage : QWizardPage
 {
 public:
 
@@ -464,7 +464,7 @@ public:
 
 protected:
 
-	void initializePage()
+	override void initializePage()
 	{
 		string finishText = wizard().buttonText(QWizard.FinishButton);	
 		// TODO: port to D2: auto pos = remove(finishText, '&');

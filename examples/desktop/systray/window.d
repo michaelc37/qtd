@@ -90,7 +90,7 @@ public:
         resize(400, 300);
     }
 
-    void setVisible(bool visible)
+    override void setVisible(bool visible)
     {
         minimizeAction.setEnabled(visible);
         maximizeAction.setEnabled(!isMaximized());
@@ -100,7 +100,7 @@ public:
 
     protected:
 
-    void closeEvent(QCloseEvent event)
+    override void closeEvent(QCloseEvent event)
     {
         if (trayIcon.isVisible()) {
             QMessageBox.information(this, tr("Systray"),
@@ -111,7 +111,7 @@ public:
         }
     }
 
-private: // slots
+public: // slots
 
     void slot_setIcon(int index)
     {

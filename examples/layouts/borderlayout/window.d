@@ -51,7 +51,7 @@ else
     import borderlayout_d1;
 
 
-class Window : public QWidget
+class Window : QWidget
 {
 public:
 

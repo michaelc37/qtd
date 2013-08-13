@@ -69,12 +69,12 @@ class GLWidget : QGLWidget
             glDeleteLists(object, 1);
         }
 
-        QSize minimumSizeHint() const
+        override QSize minimumSizeHint() const
         {
             return QSize(50, 50);
         }
 
-        QSize sizeHint() const
+		override QSize sizeHint() const
         {
             return QSize(400, 400);
         }
@@ -119,7 +119,7 @@ class GLWidget : QGLWidget
     }
 
     protected:
-        void initializeGL()
+        override void initializeGL()
         {
             qglClearColor(trolltechPurple.darker());
             object = makeObject();
@@ -128,7 +128,7 @@ class GLWidget : QGLWidget
             glEnable(GL_CULL_FACE);
         }
 
-        void paintGL()
+        override void paintGL()
         {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glLoadIdentity();
@@ -139,7 +139,7 @@ class GLWidget : QGLWidget
             glCallList(object);
         }
 
-        void resizeGL(int width, int height)
+        override void resizeGL(int width, int height)
         {
             int side = qMin(width, height);
             glViewport((width - side) / 2, (height - side) / 2, side, side);
@@ -150,12 +150,12 @@ class GLWidget : QGLWidget
             glMatrixMode(GL_MODELVIEW);
         }
 
-        void mousePressEvent(QMouseEvent event)
+        override void mousePressEvent(QMouseEvent event)
         {
             lastPos = QPoint(event.pos.x, event.pos.y);
         }
 
-        void mouseMoveEvent(QMouseEvent event)
+        override void mouseMoveEvent(QMouseEvent event)
         {
             int dx = event.x - lastPos.x;
             int dy = event.y - lastPos.y;

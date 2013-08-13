@@ -48,7 +48,7 @@ import qt.gui.QPaintEvent;
 import qt.gui.QPainter;
 
 
-class AnalogClock : public QWidget
+class AnalogClock : QWidget
 {
 public:
     this(QWidget parent = null)
@@ -61,7 +61,7 @@ public:
         resize(200, 200);
     }
 
-    void paintEvent(QPaintEvent event)
+    override void paintEvent(QPaintEvent event)
     {
         const QPoint[3] hourHand = [
             QPoint(7, 8),
