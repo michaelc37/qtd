@@ -3,7 +3,7 @@
 ##--------------------------------------------
 
 ## Find D compiler and parse its version.
-find_program(DC NAMES dmd ldc gdmd)
+find_program(DC NAMES dmd ldc ldc2 gdmd)
 if (DC)
     get_filename_component(dc_path ${DC} PATH)
     if("${dc_path}" STREQUAL ${CMAKE_BINARY_DIR})
@@ -18,7 +18,7 @@ if (DC)
         string(REGEX REPLACE "${D_COMPILER_NAME} v([0-9])\\.[0-9]+" "\\1" D_VERSION "${dmd_version}")
         string(REGEX REPLACE "${D_COMPILER_NAME} v[0-9]\\.([0-9]+)" "\\1" D_FRONTEND "${dmd_version}")
     else (dmd_version)
-	string(REGEX MATCH "LLVM-based D Compiler" is_ldc "${d_output}")
+	string(REGEX MATCH "LLVM-based D Compiler|the LLVM D compiler" is_ldc "${d_output}")
 	if (is_ldc)
 	    exec_program(${DC} ARGS "--version" OUTPUT_VARIABLE d_output)
 	    string(REGEX MATCH "based on DMD v[0-9]\\.[0-9]+" ldc_version "${d_output}")

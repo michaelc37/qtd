@@ -194,7 +194,11 @@ if(CMAKE_HOST_WIN32)
 endif()
 
 if(CPP_SHARED)
-    set(D_FLAGS -version=QtdCppShared)
+    if(D_IS_LLVM)
+        set(D_FLAGS -d-version=QtdCppShared)
+    else()
+        set(D_FLAGS -version=QtdCppShared)
+    endif()
     add_definitions(-DCPP_SHARED)
 endif()
 
