@@ -174,7 +174,7 @@ int strreg(ref Generator gen, string s)
         if (str == s)
             return idx;
         idx += str.length + 1;
-        foreach (i, c; str) {
+        foreach (ref i, c; str) {
             if (c == '\\') {
                 int cnt = lengthOfEscapeSequence(str, i) - 1;
                 idx -= cnt;
