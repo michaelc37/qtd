@@ -80,8 +80,6 @@ public:
 		createOptionsGroupBox();
 		createButtonsLayout();
 
-		timer = new QTimer();
-
 		mainLayout = new QVBoxLayout;
 		mainLayout.addWidget(screenshotLabel);
 		mainLayout.addWidget(optionsGroupBox);
@@ -113,12 +111,9 @@ public:
 		if (hideThisWindowCheckBox.isChecked())
 			hide();
 		newScreenshotButton.setDisabled(true);
-		//ToDo: see how to fix QTimer.singleShot
-		//QTimer.singleShot(delaySpinBox.value() * 1000, this, slt.ptr);
-
-		timer.setInterval(delaySpinBox.value() * 1000);
-		connect(timer, "timeout", this, "shootScreen");
-		timer.start();
+		//ToDo: see how to cleanly fix QTimer.singleShot requirement to prepend with 1 as SLOT seems to be no longer available
+		QTimer.singleShot(delaySpinBox.value() * 1000, this, "1shootScreen()");
+		//QTimer.singleShot(delaySpinBox.value() * 1000, this, SLOT(shootScreen()));
 	}
 
 	void slot_saveScreenshot()
@@ -138,7 +133,6 @@ public:
 
 	void slot_shootScreen()
 	{
-		timer.stop();
 		if (delaySpinBox.value() != 0)
 			QApplication.beep();
 
