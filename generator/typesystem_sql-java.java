@@ -46,6 +46,7 @@ import qt.sql.*;
 
 class QSqlDatabase___ extends QSqlDatabase {
 
+/*
     public static String defaultConnection() {
         qt.QNativePointer np = defaultConnection_private();
 
@@ -55,5 +56,6 @@ class QSqlDatabase___ extends QSqlDatabase {
             returned += (char) np.byteAt(i++);
         return returned;
     }
+*/
 
 }// class

@@ -82,6 +82,12 @@ QTD_EXTERN typedef void (*VoidFunc)();
     #define QTD_QWT_PUBLIC QTD_IMPORT
 #endif
 
+#ifdef QTD_SQL
+    #define QTD_SQL_PUBLIC QTD_EXPORT
+#else
+    #define QTD_SQL_PUBLIC QTD_IMPORT
+#endif
+
 //TODO: ditch
 struct QModelIndexAccessor {
 	int row;

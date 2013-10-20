@@ -1,0 +1,18 @@
+set(required Core)
+set(classes
+    QSqlDatabase
+    QSqlDriverCreatorBase
+    QSqlDriver
+    QSqlError
+    QSqlField
+    QSqlIndex
+    QSqlQueryModel
+    QSqlQuery
+    QSqlRecord
+    QSqlRelationalTableModel
+    QSqlRelation
+    QSqlResult
+    QSqlTableModel
+    )
+
+set(d_generated_files sql/QSql)

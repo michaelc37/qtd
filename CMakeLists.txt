@@ -58,7 +58,7 @@ option(BUILD_TOOLS "Build tools" "ON")
 set(GENERATE_DI_FILES OFF) ## Very experimental option. Temporarily disabled.
 option(VERBOSE_DEBUG "Verbose debug" "OFF")
 
-set(all_packages Core Gui OpenGL Xml Svg Network WebKit Qwt CACHE INTERNAL "")
+set(all_packages Core Gui OpenGL Xml Svg Network WebKit Qwt Sql CACHE INTERNAL "")
 
 ## Init D toolkit.
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)

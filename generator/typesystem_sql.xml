@@ -30,6 +30,8 @@
                 <define-ownership class="java" owner="c++"/>
             </modify-argument>
         </modify-function>
+        
+        <!--
         <modify-function signature="contains(QString)">
             <modify-argument index="1">
                 <replace-default-expression with="defaultConnection()"/>
@@ -54,7 +56,7 @@
             <access modifier="private"/>
             <rename to="defaultConnection_private"/>
         </modify-field>
-
+        -->
     </value-type>
 
   <value-type name="QSqlQuery">
@@ -137,7 +139,7 @@
         <include file-name="QSize" location="global"/>
     </extra-includes>
   
-
+        <!--
         <template name="sql.convert_sqlrecord_reference_to_java">
             jobject %out = qtjambi_from_object(__jni_env, &amp;%in, "QSqlRecord", "com/trolltech/qt/sql/", false);
             Q_ASSERT(%out);
@@ -185,7 +187,7 @@
                 </conversion-rule>
             </modify-argument>
         </modify-function>
-
+        -->
     </object-type>
   <object-type name="QSqlDriverCreatorBase">
     <extra-includes>
