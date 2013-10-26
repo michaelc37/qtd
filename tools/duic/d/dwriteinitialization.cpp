@@ -1450,7 +1450,7 @@ QString WriteInitialization::writeFontProperties(const DomFont *f)
     const QString fontName = m_driver->unique(QLatin1String("font"));
     m_fontPropertiesNameMap.insert(FontHandle(f), fontName);
 
-    m_output << m_option.indent << "QFont " << fontName << ";\n";
+    m_output << m_option.indent << "QFont " << fontName << " = new QFont();\n";
     if (f->hasElementFamily() && !f->elementFamily().isEmpty()) {
         m_output << m_option.indent << fontName << ".setFamily(QStringUtil.fromUtf8(" << fixString(f->elementFamily(), m_option.indent)
             << "));\n";
