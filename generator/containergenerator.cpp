@@ -335,7 +335,7 @@ void ContainerGenerator::writeDContent(QTextStream &s, AbstractMetaClass *cls)
         if (te->javaPackage() == cls->package()) {
             const ComplexTypeEntry *typeEntry = static_cast<const ComplexTypeEntry *>(te);
             s << "// " << typeEntry->name() << endl;
-            writeImportString(s, typeEntry);
+            writeImportString(s, typeEntry, cls);
             s << endl;
 
             Indentation indent(INDENT);
@@ -357,7 +357,7 @@ void ContainerGenerator::writeDContent2(QTextStream &s, AbstractMetaClass *cls)
     foreach(AbstractMetaType* arg_type, signalEntries[cls->package()]) {
         const TypeEntry *te = arg_type->instantiations().first()->typeEntry();
         if(!te->isPrimitive() && !te->isString())
-            writeImportString(s, te);
+            writeImportString(s, te, cls);
         s << "extern (C) void " << cppContainerConversionName(cls, arg_type, FromCpp) << "(void *cpp_ptr, " << te->targetLangName() << "[]* __d_container);" << endl;
     }
 }

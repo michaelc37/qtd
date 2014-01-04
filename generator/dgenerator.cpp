@@ -1689,14 +1689,30 @@ void DGenerator::fillRequiredImports(const AbstractMetaClass *d_class)
         m_recursive++;
 }
 
-void DGenerator::writeImportString(QTextStream &s, const TypeEntry* typeEntry)
+bool isTypeEntryInBase(const TypeEntry *typeEntry, const AbstractMetaClass *d_class)
+{    
+    AbstractMetaClass *base = d_class->baseClass();
+    while (base)
+    {
+      if (base->typeEntry() == typeEntry)      
+	return true;           
+      base = base->baseClass(); 
+    }
+  
+    return false;
+}
+
+void DGenerator::writeImportString(QTextStream &s, const TypeEntry* typeEntry, const AbstractMetaClass *d_class)
 {
-/*    QString visibility = "private";
+    /* work around for bug in v2.064 where compiler hangs from many public imports, so private by default */
+    
+    QString visibility = "private";
     if (typeEntry->isNamespace() || typeEntry->name() == "QObject")
         visibility = "public";
-    if(d_class->baseClass() && d_class->baseClass()->typeEntry() == typeEntry)
-        visibility = "public";*/
-    QString visibility = "public";
+    if (isTypeEntryInBase(typeEntry, d_class))
+        visibility = "public";
+    if (typeEntry->javaPackage() == "qt.core")
+        visibility = "public";
     s << QString("%1 import ").arg(visibility) << typeEntry->javaPackage() << "." << typeEntry->targetLangName() << ";" << endl;
 }
 
@@ -1706,14 +1722,14 @@ void DGenerator::writeRequiredImports(QTextStream &s, const AbstractMetaClass *d
         if (!excludedTypes.contains(typeEntry->name()) && d_class->typeEntry() != typeEntry
             && typeEntry->javaQualifier() != typeEntry->name()
 /*also*/            && !excludedTypes2.contains(typeEntry->name()))
-            writeImportString(s, typeEntry);
+            writeImportString(s, typeEntry, d_class);
     }
 
     foreach (const TypeEntry *typeEntry, typeEntries) {
         if (!excludedTypes.contains(typeEntry->name()) && d_class->typeEntry() != typeEntry
             && typeEntry->javaQualifier() != typeEntry->name()
 /*also*/            && !excludedTypes2.contains(typeEntry->name()))
-            writeImportString(s, typeEntry);
+            writeImportString(s, typeEntry, d_class);
     }
     excludedTypes2.clear();
 }
