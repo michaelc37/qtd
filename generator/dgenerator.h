@@ -177,7 +177,7 @@ private:
     QSet<QString> excludedTypes2;
 
 protected:
-    void writeImportString(QTextStream &s, const TypeEntry* typeEntry, const AbstractMetaClass *d_class);
+    void writeImportString(QTextStream &s, const TypeEntry* typeEntry);
 
     QSet<QString> excludedTypes;
     QString m_package_name;
