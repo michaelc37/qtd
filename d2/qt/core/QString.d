@@ -30,9 +30,11 @@ struct QString
         qtd_QString_assign_fromUtf8(&this, str);
     }
     
-    this(string str)
+    public static QString opCall(string str)
     {
-        qtd_QString_new_fromUtf8_at(&this, str);
+        QString s;
+        qtd_QString_new_fromUtf8_at(&s, str);
+        return s;
     }
     
     public static void __constructPlacedQString(void* place, string source) {

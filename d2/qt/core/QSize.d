@@ -14,15 +14,17 @@ public struct QSize
     { wd = w; ht = h; }
 */
 
-    public static QSize opCall() {
-    	QSize sz;
-    	sz.wd = sz.ht = -1;
-    	return sz;
+     public static QSize opCall() {
+        QSize sz;
+        sz.wd = sz.ht = -1;
+        return sz;
     }
 
-    public this(int w, int h) {
-    	wd = w;
-    	ht = h;
+    public static QSize opCall(int w, int h) {
+        QSize sz;    
+        sz.wd = w;
+        sz.ht = h;
+        return sz;
     }
 
     final bool isNull()
@@ -126,8 +128,8 @@ public struct QSize
         enum bool isDummy = false;
     }
 private:
-    int wd;
-    int ht;
+    int wd = -1;
+    int ht = -1;
 }
 
 
@@ -144,22 +146,22 @@ public struct QSizeF
 	{ wd = w; ht = h; }
 */
 	public static QSizeF opCall() {
-    	QSizeF sz;
-		sz.wd = sz.ht = -1.;
-		return sz;
-	}
+                QSizeF sz;
+                sz.wd = sz.ht = -1.;
+                return sz;
+        }
 
-	public static QSizeF opCall(auto_ref!QSizeF s) {
-		QSizeF sz;
-		sz.wd = s.width(); sz.ht = s.height();
-		return sz;
-	}
+        public static QSizeF opCall(auto_ref!QSizeF s) {
+                QSizeF sz;
+                sz.wd = s.width(); sz.ht = s.height();
+                return sz;
+        }
 
-	public static QSizeF opCall(qreal w, qreal h) {
-		QSizeF sz;
-		sz.wd = w; sz.ht = h;
-		return sz;
-	}
+        public static QSizeF opCall(qreal w, qreal h) {
+                QSizeF sz;
+                sz.wd = w; sz.ht = h;
+                return sz;
+        }
 
 	bool isNull()
 	{ return qIsNull(wd) && qIsNull(ht); }

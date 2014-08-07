@@ -15,14 +15,18 @@ public struct QLine
         return ln;
     }
 
-    public this(QPoint pt1_, QPoint pt2_) {
-        pt1 = pt1_;
-        pt2 = pt2_;
+    public static QLine opCall(QPoint pt1_, QPoint pt2_) {
+        QLine ln;
+        ln.pt1 = pt1_;
+        ln.pt2 = pt2_;
+        return ln;
     }
 
-    public this(int x1pos, int y1pos, int x2pos, int y2pos) {
-        pt1 = QPoint(x1pos, y1pos);
-        pt2 = QPoint(x2pos, y2pos);
+    public static QLine opCall(int x1pos, int y1pos, int x2pos, int y2pos) {
+        QLine ln;
+        ln.pt1 = QPoint(x1pos, y1pos);
+        ln.pt2 = QPoint(x2pos, y2pos);
+        return ln;
     }
 
     bool isNull() // const
@@ -167,12 +171,13 @@ public struct QLineF
     alias QLineF_IntersectType.BoundedIntersection BoundedIntersection;
     alias QLineF_IntersectType.UnboundedIntersection UnboundedIntersection;
 
+    /* not allowed in v2.065
     public static QLineF opCall() {
         QLineF ln;
         ln.pt1 = QPointF();
         ln.pt2 = QPointF();
         return ln;
-    }
+    }*/
 
     public this(QPointF apt1, QPointF apt2) {
         pt1 = apt1;

@@ -87,6 +87,7 @@ public:
         ExternC                         = 0x01000000,
         VirtualDispatch                 = 0x02000000,
         ForcePointer                    = 0x10000000,
+        SkipOverride                    = 0x20000000,
 
         ForceValueType                  = ExcludeReference | ExcludeConst
     };

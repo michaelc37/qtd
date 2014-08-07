@@ -320,7 +320,7 @@ import std.conv;
 
 alias void Dummy; // DMD bug #3538
 
-struct QList(T, alias Default = Dummy)
+struct QList(T, Default = Dummy)
 {
     alias T ElementType;
 

@@ -15,9 +15,11 @@ public struct QPoint
         return pt;
     }
 
-    public this(int xpos, int ypos) {
-        xp = xpos;
-        yp = ypos;
+    public static QPoint opCall(int xpos, int ypos) {
+        QPoint pt;
+        pt.xp = xpos;
+        pt.yp = ypos;
+        return pt;
     }
 
     bool isNull() // const
@@ -122,21 +124,25 @@ private:
 
 
 public struct QPointF
-{
+{    
     public static QPointF opCall() {
         QPointF pt;
         pt.xp = pt.yp = 0;
         return pt;
     }
 
-    public this(qreal xpos, qreal ypos) {
-        xp = xpos;
-        yp = ypos;
+    public static QPointF opCall(qreal xpos, qreal ypos) {
+        QPointF pt;
+        pt.xp = xpos;
+        pt.yp = ypos;
+        return pt;
     }
 
-    public this(QPoint p) {
-        xp = p.x();
-        yp = p.y();
+    public static QPointF opCall(QPoint p) {
+        QPointF pt;
+        pt.xp = p.x();
+        pt.yp = p.y();
+        return pt;
     }
 
     bool isNull() const

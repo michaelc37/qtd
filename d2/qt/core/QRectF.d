@@ -18,36 +18,44 @@ public struct QRectF
         return rt;
     }
 
-    public this(qreal aleft, qreal atop, qreal awidth, qreal aheight)
+    public static QRectF opCall(qreal aleft, qreal atop, qreal awidth, qreal aheight)
     {
-        xp = aleft;
-        yp = atop;
-        w = awidth;
-        h = aheight;
+        QRectF rt;
+        rt.xp = aleft;
+        rt.yp = atop;
+        rt.w = awidth;
+        rt.h = aheight;
+        return rt;
     }
 
-    public this(QPointF atopLeft, QSizeF asize)
+    public static QRectF opCall(QPointF atopLeft, QSizeF asize)
     {
-        xp = atopLeft.x();
-        yp = atopLeft.y();
-        w = asize.width();
-        h = asize.height();
+        QRectF rt;
+        rt.xp = atopLeft.x();
+        rt.yp = atopLeft.y();
+        rt.w = asize.width();
+        rt.h = asize.height();
+        return rt;
     }
 
-    public this(QPointF atopLeft, QPointF abottomRight)
+    public static QRectF opCall(QPointF atopLeft, QPointF abottomRight)
     {
-        xp = atopLeft.x();
-        yp = atopLeft.y();
-        w = abottomRight.x() - xp;
-        h = abottomRight.y() - yp;
+        QRectF rt;
+        rt.xp = atopLeft.x();
+        rt.yp = atopLeft.y();
+        rt.w = abottomRight.x() - rt.xp;
+        rt.h = abottomRight.y() - rt.yp;
+        return rt;
     }
 
-    public this(QRect r)
+    public static QRectF opCall(QRect r)
     {
-        xp = r.x();
-        yp = r.y();
-        w = r.width();
-        h = r.height();
+        QRectF rt;
+        rt.xp = r.x();
+        rt.yp = r.y();
+        rt.w = r.width();
+        rt.h = r.height();
+        return rt;
     }
 
     bool isNull() const

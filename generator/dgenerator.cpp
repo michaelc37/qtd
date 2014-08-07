@@ -2453,10 +2453,9 @@ void DGenerator::write(QTextStream &s, const AbstractMetaClass *d_class)
                 retrieveModifications(d_function, d_class, &exclude_attributes, &include_attributes);
                 if (notWrappedYet(d_function))
                     continue;
-                s << endl
-                  << INDENT << "override ";
+                s << endl << INDENT << "override ";
                 writeFunctionAttributes(s, d_function, include_attributes, exclude_attributes,
-                                        d_function->isNormal() || d_function->isSignal() ? 0 : SkipReturnType);
+                                        d_function->isNormal() || d_function->isSignal() ? SkipOverride : SkipReturnType);
 
                 s << d_function->name() << "(";
                 writeFunctionArguments(s, d_function, d_function->arguments().count());
@@ -2901,10 +2900,10 @@ void DGenerator::writeNativeField(QTextStream &s, const AbstractMetaField *field
 void DGenerator::writeSignalSignatures(QTextStream &s, const AbstractMetaClass *d_class, AbstractMetaFunctionList signal_funcs)
 {
     writeMetaMethodSignatures(s, "__signalSignatures", signal_funcs);
-    s << INDENT;
+    s << INDENT << "public ";
     if (d_class->name() != "QObject")
         s << "override ";
-    s << INDENT << " int signalSignature(int signalId, ref stringz signature) {" << endl;
+    s << " int signalSignature(int signalId, ref stringz signature) {" << endl;
     {
         Indentation indent(INDENT);
 
@@ -3375,38 +3374,40 @@ void DGenerator::writeFunctionAttributes(QTextStream &s, const AbstractMetaFunct
         && (!(attr & AbstractMetaAttributes::Native))) {
 
         bool do_override = false;
-        if ((d_function->name() == "toString") && (d_function->arguments().size() == 0))  {
-            //Object.toString() is not known by the typesystem so, must manually override
-            do_override = true;
-        } else {        
-            const AbstractMetaClass *d_base_class = d_function->ownerClass();    
-            d_base_class = d_base_class? d_base_class->baseClass() : NULL;
-            while (d_base_class && !do_override) {
-                AbstractMetaFunctionList d_base_class_functions = d_base_class->queryFunctionsByName(d_function->name());
-                if (d_base_class_functions.size() > 0) {
-                    foreach (const AbstractMetaFunction *base_function, d_base_class_functions) {
-                        //modified attributes
-                        uint base_include_attribs = 0; 
-                        uint base_exclude_attribs = 0;
+        if (!(options & SkipOverride)) {
+          if ((d_function->name() == "toString") && (d_function->arguments().size() == 0))  {
+              //Object.toString() is not known by the typesystem so, must manually override
+              do_override = true;
+          } else {        
+              const AbstractMetaClass *d_base_class = d_function->ownerClass();    
+              d_base_class = d_base_class? d_base_class->baseClass() : NULL;
+              while (d_base_class && !do_override) {
+                  AbstractMetaFunctionList d_base_class_functions = d_base_class->queryFunctionsByName(d_function->name());
+                  if (d_base_class_functions.size() > 0) {
+                      foreach (const AbstractMetaFunction *base_function, d_base_class_functions) {
+                          //modified attributes
+                          uint base_include_attribs = 0; 
+                          uint base_exclude_attribs = 0;
 
-                        retrieveModifications(base_function, d_base_class, &base_exclude_attribs, &base_include_attribs);
-                        uint base_function_attr = base_function->attributes() & (~base_exclude_attribs) | base_include_attribs;
+                          retrieveModifications(base_function, d_base_class, &base_exclude_attribs, &base_include_attribs);
+                          uint base_function_attr = base_function->attributes() & (~base_exclude_attribs) | base_include_attribs;
+  
+                          if (base_function->minimalSignature() == d_function->minimalSignature()) {
+  
+                              if ( (!(base_function_attr & AbstractMetaAttributes::Private)) 
+                              && (!(base_function_attr & AbstractMetaAttributes::FinalInTargetLang)) ) {
 
-                        if (base_function->minimalSignature() == d_function->minimalSignature()) {
+                                  do_override = true;
+                                  break;
+                              }
+                          }
+                      }           
+                  }
 
-                            if ( (!(base_function_attr & AbstractMetaAttributes::Private)) 
-                            && (!(base_function_attr & AbstractMetaAttributes::FinalInTargetLang)) ) {
-
-                                do_override = true;
-                                break;
-                            }
-                        }
-                    }           
-                }
-
-                d_base_class = d_base_class->baseClass(); 
-            }
-        }
+                  d_base_class = d_base_class->baseClass(); 
+              }
+          }
+	}
 
         if (do_override)
         s << "override ";

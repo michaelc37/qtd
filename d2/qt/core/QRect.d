@@ -16,28 +16,34 @@ public struct QRect
         return rt;
     }
 
-    public this(int aleft, int atop, int awidth, int aheight)
+    public static QRect opCall(int aleft, int atop, int awidth, int aheight)
     {
-        x1 = aleft;
-        y1 = atop;
-        x2 = (aleft + awidth - 1);
-        y2 = (atop + aheight - 1);
+        QRect rt;
+        rt.x1 = aleft;
+        rt.y1 = atop;
+        rt.x2 = (aleft + awidth - 1);
+        rt.y2 = (atop + aheight - 1);
+        return rt;
     }
 
-    public this(QPoint atopLeft, QPoint abottomRight)
+    public static QRect opCall(QPoint atopLeft, QPoint abottomRight)
     {
-        x1 = atopLeft.x();
-        y1 = atopLeft.y();
-        x2 = abottomRight.x();
-        y2 = abottomRight.y();
+        QRect rt;
+        rt.x1 = atopLeft.x();
+        rt.y1 = atopLeft.y();
+        rt.x2 = abottomRight.x();
+        rt.y2 = abottomRight.y();
+        return rt;
     }
 
-    public this(ref QPoint atopLeft, ref QSize asize)
+    public static QRect opCall(ref QPoint atopLeft, ref QSize asize)
     {
-        x1 = atopLeft.x();
-        y1 = atopLeft.y();
-        x2 = (x1+asize.width() - 1);
-        y2 = (y1+asize.height() - 1);
+        QRect rt;
+        rt.x1 = atopLeft.x();
+        rt.y1 = atopLeft.y();
+        rt.x2 = (rt.x1+asize.width() - 1);
+        rt.y2 = (rt.y1+asize.height() - 1);
+        return rt;
     }
 
     bool isNull() const
@@ -355,15 +361,15 @@ private:
     {
         int y1;
         int x1;
-        int y2;
-        int x2;
+        int y2 = -1;
+        int x2 = -1;
     }
     else
     {
         int x1;
         int y1;
-        int x2;
-        int y2;
+        int x2 = -1;
+        int y2 = -1;
     }
 }
 
